@@ -301,7 +301,7 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}`,
+            _subject: `OP_APP | ${machineData.id} | ${machineData.op}`,
             _template: "table",
             Acao: (editingId || oldMachine) ? 'EDITAR' : 'CRIAR',
             Reator: machineData.id,
@@ -403,7 +403,7 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `DATA|${updatedMachineData.id}|${updatedMachineData.product}|${updatedMachineData.op}|${updatedMachineData.tag}|${updatedMachineData.status}|${updatedMachineData.time}`,
+            _subject: `OP_APP | ${updatedMachineData.id} | ${updatedMachineData.op}`,
             _template: "table",
             Acao: 'EDITAR',
             Reator: updatedMachineData.id,
