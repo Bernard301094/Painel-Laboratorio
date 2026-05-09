@@ -309,12 +309,13 @@ export default function Admin() {
             OP: machineData.op,
             Amostra: machineData.tag,
             Status: machineData.status,
-            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'],
-            'HORARIO ACABADO': allTimes['HORARIO ACABADO'],
-            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'],
-            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'],
-            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'],
-            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO']
+            Horario: machineData.time,
+            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'] || '',
+            'HORARIO ACABADO': allTimes['HORARIO ACABADO'] || '',
+            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
+            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
+            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
+            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO'] || ''
           }),
         });
       } catch (emailError) {
@@ -409,12 +410,13 @@ export default function Admin() {
             OP: updatedMachineData.op,
             Amostra: updatedMachineData.tag,
             Status: updatedMachineData.status,
-            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'],
-            'HORARIO ACABADO': allTimes['HORARIO ACABADO'],
-            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'],
-            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'],
-            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'],
-            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO']
+            Horario: updatedMachineData.time,
+            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'] || '',
+            'HORARIO ACABADO': allTimes['HORARIO ACABADO'] || '',
+            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
+            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
+            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
+            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO'] || ''
           }),
         });
       } catch (emailError) {
