@@ -89,7 +89,7 @@ export default function Display() {
     }
     const interval = setInterval(() => {
       setCurrentPage((prev) => (prev + 1) * itemsPerPage >= machines.length ? 0 : prev + 1);
-    }, 8000);
+    }, 12000);
     return () => clearInterval(interval);
   }, [machines.length, itemsPerPage]);
 
