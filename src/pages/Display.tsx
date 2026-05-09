@@ -234,11 +234,16 @@ const MachineCard = ({ data }: { data: any }) => {
         </div>
       </div>
       
-      <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t border-[rgba(255,255,255,0.1)] flex justify-between items-center z-10 shrink-0">
+      <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-1 z-10 shrink-0">
         <span className={`text-[9px] md:text-[10px] font-bold tracking-wider uppercase flex items-center ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
           <Clock className="w-3.5 h-3.5 mr-1.5" />
           Horário: {data.time}
         </span>
+        {data.history && data.history.length > 0 && (
+          <span className="text-[8px] md:text-[9px] font-medium tracking-wide flex items-center text-gray-500 opacity-80">
+            Anterior: {data.history[data.history.length - 1].status} às {data.history[data.history.length - 1].time}
+          </span>
+        )}
       </div>
     </div>
   );

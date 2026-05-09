@@ -5,9 +5,10 @@ import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, 
 import { Link } from 'react-router-dom';
 
 function ComboInput({ value, options, onChange, placeholder, classNameInput }: { value: string, options: string[], onChange: (v: string) => void, placeholder: string, classNameInput: string }) {
-  const [mode, setMode] = useState<'select'|'input'>(options.includes(value) || !value ? 'select' : 'input');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const filteredOptions = options.filter(o => o.toLowerCase().includes(value.toLowerCase()));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -19,72 +20,49 @@ function ComboInput({ value, options, onChange, placeholder, classNameInput }: {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (mode === 'select') {
-    return (
-      <div className="relative w-full" ref={containerRef}>
-        <button 
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`${classNameInput} flex items-center justify-between cursor-pointer w-full text-left appearance-none select-none`}
-        >
-          <span className={`${value ? '' : 'text-gray-500'} truncate leading-tight`}>{value || placeholder}</span>
-          <ChevronDown className={`w-3.5 h-3.5 ml-2 opacity-50 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        
-        {isOpen && (
-          <div className="absolute z-[100] mt-1 left-0 ring-1 ring-[rgba(255,255,255,0.1)] min-w-[160px] bg-[#141414] shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-             <div className="max-h-56 overflow-y-auto py-1 hide-scrollbar">
-              {options.map(o => (
-                <button
-                  key={o}
-                  type="button"
-                  onClick={() => {
-                     onChange(o);
-                     setIsOpen(false);
-                  }}
-                  className={`w-full text-left px-3.5 py-2.5 text-[12px] hover:bg-[rgba(255,255,255,0.1)] ${value === o ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)] font-bold tracking-wider' : 'text-gray-300 font-medium'} transition-colors`}
-                >
-                  {o}
-                </button>
-              ))}
-            </div>
-            <div className="h-px bg-[rgba(255,255,255,0.1)]" />
-            <button
-              type="button"
-              onClick={() => {
-                setMode('input');
-                onChange('');
-                setIsOpen(false);
-              }}
-              className="w-full text-left px-3.5 py-3 text-[12px] text-emerald-400 hover:bg-[rgba(16,185,129,0.1)] transition-colors font-bold tracking-wider flex items-center gap-2"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Inserir Manualmente
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center relative w-full group">
-       <input 
-        required 
-        autoFocus 
-        value={value} 
-        onChange={e => onChange(e.target.value.toUpperCase())} 
-        className={`${classNameInput} pr-8 focus:ring-1 focus:ring-emerald-500`} 
-        placeholder={placeholder} 
-      />
-      <button 
-        type="button" 
-        onClick={() => { setMode('select'); onChange(options[0] || ''); }} 
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.2)] p-1.5 rounded-md transition-colors" 
-        title="Cancelar entrada manual"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+    <div className="relative w-full" ref={containerRef}>
+      <div className="flex items-center relative w-full group">
+        <input 
+          required 
+          value={value} 
+          onChange={e => {
+            onChange(e.target.value.toUpperCase());
+            setIsOpen(true);
+          }} 
+          onFocus={() => setIsOpen(true)}
+          className={`${classNameInput} pr-8 focus:ring-1 focus:ring-emerald-500`} 
+          placeholder={placeholder} 
+        />
+        <button 
+          title="Abrir opções"
+          type="button" 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.2)] p-1 rounded transition-colors" 
+        >
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {isOpen && filteredOptions.length > 0 && (
+        <div className="absolute z-[100] mt-1 left-0 ring-1 ring-[rgba(255,255,255,0.1)] min-w-[200px] w-full bg-[#141414] shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+           <div className="max-h-56 overflow-y-auto py-1 hide-scrollbar">
+            {filteredOptions.map(o => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => {
+                   onChange(o);
+                   setIsOpen(false);
+                }}
+                className={`w-full text-left px-3.5 py-2.5 text-[12px] hover:bg-[rgba(255,255,255,0.1)] ${value === o ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)] font-bold tracking-wider' : 'text-gray-300 font-medium'} transition-colors`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -168,9 +146,15 @@ export default function Admin() {
 
   const defaultTags = ['MANIPULADO', 'ACABADO'];
   const defaultStatuses = ['LIBERADO', 'EM AJUSTE', 'AGUARDANDO'];
+  const defaultReatores = [
+    'AF01', 'AF02', 'AF03', 'AF04', 'AF05', 'AF06', 'AF07', 'AF08', 'AF09', 'AF10', 'AF11', 'AF12',
+    'AQ01', 'AQ02', 'AQ03', 'AQ04', 'AQ05', 'AQ06', 'AQ07', 'AQ08', 'AQ09', 'AQ10', 'S SECO'
+  ];
 
   const allTags = Array.from(new Set([...defaultTags, ...uniqueTags]));
   const allStatuses = Array.from(new Set([...defaultStatuses, ...uniqueStatuses]));
+  const uniqueReatores = Array.from(new Set(machines.map(m => m.id?.toUpperCase() || ''))).filter(Boolean);
+  const allReatores = Array.from(new Set([...defaultReatores, ...uniqueReatores]));
 
   useEffect(() => {
     const q = query(collection(db, 'machines'), orderBy('order', 'asc'));
@@ -186,25 +170,69 @@ export default function Admin() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.id.trim()) return;
+
     try {
-      const dbDocId = editingId ? editingId : formData.id.replace(/\s+/g, '-').toUpperCase() + '-' + Date.now();
+      const reatorFormattedId = formData.id.trim().replace(/\s+/g, '-').toUpperCase();
+      const dbDocId = reatorFormattedId;
       const ref = doc(db, 'machines', dbDocId);
       
+      const oldMachine = editingId ? machines.find(m => m.firebaseId === editingId) : machines.find(m => m.firebaseId === reatorFormattedId || m.id.toUpperCase() === formData.id.trim().toUpperCase());
+      
+      let history = oldMachine?.history || [];
+      if (oldMachine && oldMachine.op !== formData.op) {
+         history = []; // Nova OP no mesmo reator, limpa o histórico
+      } else if (oldMachine) {
+        if (oldMachine.status !== formData.status || oldMachine.tag !== formData.tag) {
+          history = [...history, {
+            status: oldMachine.status,
+            tag: oldMachine.tag,
+            time: oldMachine.time,
+            timestamp: new Date().toISOString()
+          }];
+        }
+      }
+
       const machineData = {
-        id: formData.id,
+        id: formData.id.toUpperCase(),
         product: formData.product,
         op: formData.op,
         tag: formData.tag,
         status: formData.status,
         time: formData.time || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        order: editingId ? machines.find(m => m.firebaseId === editingId)?.order : machines.length,
+        history: history,
+        order: editingId ? oldMachine?.order : machines.length,
         updatedAt: serverTimestamp()
       };
 
-      if (editingId) {
-        await updateDoc(ref, machineData);
-      } else {
-        await setDoc(ref, machineData);
+      if (editingId && editingId !== dbDocId) {
+        await deleteDoc(doc(db, 'machines', editingId));
+      }
+      await setDoc(ref, machineData);
+
+      // Send data via Email (FormSubmit)
+      try {
+        const destEmail = 'bernard.castillo@tractgroup.com.br'; // Cambia esto si quieres otro correo
+        await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            _subject: `${editingId ? 'Editando' : 'Nova'} OP no App: ${machineData.id} - OP: ${machineData.op}`, // Asunto del correo
+            _template: "table",
+            Acao: editingId ? 'EDITAR' : 'CRIAR',
+            Reator: machineData.id,
+            Produto: machineData.product,
+            OP: machineData.op,
+            Amostra: machineData.tag,
+            Status: machineData.status,
+            Horario: machineData.time
+          }),
+        });
+      } catch (emailError) {
+        console.error("Error sending to email: ", emailError);
       }
 
       setFormData({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
@@ -298,8 +326,8 @@ export default function Admin() {
         {showAdd && (
           <form onSubmit={handleSave} className="glass-card animate-in fade-in slide-in-from-top-4 p-5 md:p-6 rounded-2xl mb-8 grid grid-cols-1 md:grid-cols-7 gap-4 items-end shadow-[0_0_30px_rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] bg-[rgba(16,185,129,0.05)]">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Novo Reator</label>
-              <input required value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-[rgba(255,255,255,0.1)] transition-all" placeholder="Ex: AF12" />
+              <label className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Reator</label>
+              <ComboInput value={formData.id} options={allReatores} onChange={v => setFormData({...formData, id: v})} placeholder="Ex: AF12" classNameInput="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-[rgba(255,255,255,0.1)] transition-all w-full" />
             </div>
             <div className="flex flex-col gap-1.5 md:col-span-2">
               <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Produto</label>
@@ -319,7 +347,7 @@ export default function Admin() {
             </div>
             <div className="flex flex-col gap-1.5 relative">
               <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Horário</label>
-              <input type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-[rgba(255,255,255,0.1)] transition-all w-full" placeholder="Ex: 14:30" />
+              <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-[rgba(255,255,255,0.1)] transition-all w-full" placeholder="Ex: 14:30" />
             </div>
             <div className="mt-2 md:col-span-7 flex justify-end">
               <button type="submit" className="bg-emerald-500 text-white font-bold text-[11px] md:text-xs uppercase py-3 px-8 rounded-lg hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
@@ -372,8 +400,8 @@ export default function Admin() {
                 <form key={'edit-'+m.firebaseId} onSubmit={handleSave} className="bg-[#1a1a1a] rounded-2xl p-5 relative overflow-visible flex flex-col justify-between h-full min-h-[190px] border border-[rgba(16,185,129,0.4)] shadow-2xl animate-in zoom-in-95 duration-200 z-50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="w-1/2">
-                      <span className="text-[10px] font-bold tracking-wider text-emerald-400 block mb-1 uppercase">Editar Reator</span>
-                      <input required value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(16,185,129,0.3)] outline-none px-2 py-1 -ml-2 rounded text-xl font-black tracking-tight text-white w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
+                      <span className="text-[10px] font-bold tracking-wider text-emerald-400 block mb-1 uppercase">Reator</span>
+                      <ComboInput value={formData.id} options={allReatores} onChange={v => setFormData({...formData, id: v})} placeholder="Reator" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(16,185,129,0.3)] outline-none px-2 py-1 -ml-2 rounded text-xl font-black tracking-tight text-white w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
                     </div>
                     <div className="flex items-center gap-1.5 ml-2">
                        <button type="button" onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:text-white bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] rounded transition-colors"><X className="w-4 h-4"/></button>
@@ -392,7 +420,7 @@ export default function Admin() {
                       </div>
                       <div className="w-[120px]">
                         <span className="text-[10px] font-bold tracking-wider text-gray-400 block mb-0.5 uppercase">Amostra</span>
-                        <ComboInput value={formData.tag} options={allTags} onChange={v => setFormData({...formData, tag: v})} placeholder="Amostra" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 -ml-2 rounded text-[13px] font-semibold text-gray-200 w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
+                        <ComboInput value={formData.tag} options={allTags} onChange={v => setFormData({...formData, tag: v, time: ''})} placeholder="Amostra" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 -ml-2 rounded text-[13px] font-semibold text-gray-200 w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
                       </div>
                     </div>
                   </div>
@@ -401,12 +429,12 @@ export default function Admin() {
                     <div className="flex items-center justify-between">
                        <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Status</span>
                        <div className="w-[130px]">
-                         <ComboInput value={formData.status} options={allStatuses} onChange={v => setFormData({...formData, status: v})} placeholder="Status" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" />
+                         <ComboInput value={formData.status} options={allStatuses} onChange={v => setFormData({...formData, status: v, time: ''})} placeholder="Status" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" />
                        </div>
                     </div>
                     <div className="flex items-center justify-between">
                        <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Horário</span>
-                       <input type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-[130px] focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" placeholder="Ex: 14:30" />
+                       <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-[130px] focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" placeholder="Ex: 14:30" />
                     </div>
                     <button type="submit" className="w-full bg-emerald-500 text-white font-bold text-[11px] uppercase py-2 rounded hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">Salvar Alterações</button>
                   </div>
@@ -466,15 +494,22 @@ export default function Admin() {
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex justify-between items-center z-10">
-                  <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
-                    <Clock className="w-3.5 h-3.5" />
-                    {m.time}
-                  </span>
-                  <div className={`${colorBg} ${colorText} px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border shadow-sm`}>
-                    <Icon className="w-3 h-3" />
-                    <span className="text-[9px] font-bold tracking-wider uppercase">{m.status}</span>
+                <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-1 z-10 shrink-0">
+                  <div className="flex justify-between items-center w-full">
+                    <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
+                      <Clock className="w-3.5 h-3.5" />
+                      {m.time}
+                    </span>
+                    <div className={`${colorBg} ${colorText} px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border shadow-sm`}>
+                      <Icon className="w-3 h-3" />
+                      <span className="text-[9px] font-bold tracking-wider uppercase">{m.status}</span>
+                    </div>
                   </div>
+                  {m.history && m.history.length > 0 && (
+                    <span className="text-[8px] md:text-[9px] font-medium tracking-wide flex items-center text-gray-500 opacity-80 mt-0.5">
+                      Anterior: {m.history[m.history.length - 1].status} às {m.history[m.history.length - 1].time}
+                    </span>
+                  )}
                 </div>
               </div>
             );
