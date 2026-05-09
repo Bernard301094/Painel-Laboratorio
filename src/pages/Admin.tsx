@@ -301,7 +301,7 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `Nova OP no App ${(editingId || oldMachine) ? '(Edição)' : ''}: ${machineData.id} - OP: ${machineData.op}`,
+            _subject: `DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}`,
             _template: "table",
             Acao: (editingId || oldMachine) ? 'EDITAR' : 'CRIAR',
             Reator: machineData.id,
@@ -394,6 +394,7 @@ export default function Admin() {
       setTimeByState(updatedMachineData.tag, updatedMachineData.status, updatedMachineData.time);
 
       try {
+        const rawDataLine = `PARSE_DATA|${updatedMachineData.id}|${updatedMachineData.product}|${updatedMachineData.op}|${updatedMachineData.tag}|${updatedMachineData.status}|${updatedMachineData.time}`;
         const destEmail = 'bernard.castillo@tractgroup.com.br';
         await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
           method: 'POST',
@@ -402,7 +403,7 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `Nova OP no App (Atualização): ${updatedMachineData.id} - OP: ${updatedMachineData.op}`,
+            _subject: `DATA|${updatedMachineData.id}|${updatedMachineData.product}|${updatedMachineData.op}|${updatedMachineData.tag}|${updatedMachineData.status}|${updatedMachineData.time}`,
             _template: "table",
             Acao: 'EDITAR',
             Reator: updatedMachineData.id,
