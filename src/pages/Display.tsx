@@ -101,27 +101,27 @@ export default function Display() {
       <div className="ambient-glow"></div>
       
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
+      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a] border-b border-white/10 shadow-xl flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
         <div>
           <h1 className="font-bold text-2xl md:text-3xl text-gray-100 tracking-tight">Painel de Laboratório</h1>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center">
           {totalPages > 1 && (
-            <div className="flex gap-1.5 mr-4 items-center">
+            <div className="flex mr-4 items-center">
               {Array.from({ length: totalPages }).map((_, i) => (
                 <span 
                   key={i} 
-                  className={`h-1.5 rounded-full transition-all duration-500 ${i === currentPage ? 'bg-emerald-500 w-6' : 'bg-white/20 w-1.5'}`}
+                  className={`h-1.5 rounded-full transition-all duration-500 mr-1.5 ${i === currentPage ? 'bg-emerald-500 w-6' : 'bg-white/20 w-1.5'}`}
                 />
               ))}
             </div>
           )}
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 md:py-2.5 rounded-lg shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+          <div className="flex items-center bg-white/5 border border-white/10 px-4 py-2 md:py-2.5 rounded-lg shadow-sm mr-4">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)] mr-2"></span>
             <span className="text-[10px] md:text-xs font-bold tracking-wider text-gray-300 uppercase">Atualizado: {currentTime}</span>
           </div>
-          <button onClick={toggleFullscreen} className="p-2 text-gray-500 hover:text-emerald-400 transition-colors" title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}>
+          <button onClick={toggleFullscreen} className="p-2 mr-2 text-gray-500 hover:text-emerald-400 transition-colors" title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}>
             {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
           </button>
           <Link to="/admin" target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-emerald-400 transition-colors" title="Acessar Painel Administrativo">
@@ -132,12 +132,14 @@ export default function Display() {
 
       {/* Main Content */}
       <main className="flex-grow pt-24 md:pt-28 pb-6 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300 flex flex-col">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5 flex-grow" style={{ gridAutoRows: '1fr' }}>
+        <div className="flex flex-wrap -mx-2 md:-mx-2.5 flex-grow content-start">
           {displayedMachines.map((m) => (
-            <MachineCard key={m.firebaseId || m.id} data={m} />
+            <div key={m.firebaseId || m.id} className="w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 2xl:w-1/5 p-2 md:p-2.5 flex flex-col">
+              <MachineCard data={m} />
+            </div>
           ))}
           {machines.length === 0 && (
-            <div className="col-span-full flex items-center justify-center h-[50vh] text-gray-500 font-medium">
+            <div className="w-full flex items-center justify-center h-[50vh] text-gray-500 font-medium">
               <p>Nenhuma OP sendo exibida no momento.</p>
             </div>
           )}
@@ -171,32 +173,36 @@ const MachineCard = ({ data }: { data: any }) => {
           <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-1 uppercase">Reator</span>
           <h2 className={`text-3xl font-black tracking-tight ${headerText}`}>{data.id}</h2>
         </div>
-        <div className={`${colorBg} ${colorText} px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border shadow-sm`}>
-          <Icon className="w-3.5 h-3.5" />
+        <div className={`${colorBg} ${colorText} px-2.5 py-1.5 rounded-lg flex items-center border shadow-sm`}>
+          <Icon className="w-3.5 h-3.5 mr-1.5" />
           <span className="text-[9px] font-bold tracking-wider uppercase">{data.status}</span>
         </div>
       </div>
       
-      <div className="space-y-3 flex-grow z-10 pt-1">
-        <div>
+      <div className="flex-grow z-10 pt-1">
+        <div className="mb-3">
           <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Produto</span>
           <p className="text-base font-bold text-gray-200 uppercase leading-tight truncate" title={data.product}>{data.product}</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-            <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
-            <p className="text-[13px] font-semibold text-gray-300">{data.op}</p>
+        <div className="flex flex-wrap -mx-1.5">
+          <div className="w-1/2 px-1.5">
+            <div className="bg-white/5 p-2 rounded-lg border border-white/5 h-full">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
+              <p className="text-[13px] font-semibold text-gray-300">{data.op}</p>
+            </div>
           </div>
-          <div className="bg-white/5 p-2 rounded-lg border border-white/5">
-            <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
-            <p className="text-[13px] font-semibold text-gray-300 uppercase">{data.tag}</p>
+          <div className="w-1/2 px-1.5">
+            <div className="bg-white/5 p-2 rounded-lg border border-white/5 h-full">
+              <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
+              <p className="text-[13px] font-semibold text-gray-300 uppercase">{data.tag}</p>
+            </div>
           </div>
         </div>
       </div>
       
       <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center z-10">
-        <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
-          <Clock className="w-3.5 h-3.5" />
+        <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
+          <Clock className="w-3.5 h-3.5 mr-1.5" />
           Horário: {data.time}
         </span>
       </div>
