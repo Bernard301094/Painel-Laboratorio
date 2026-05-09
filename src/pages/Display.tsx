@@ -4,12 +4,39 @@ import { db } from '../firebase';
 import { CheckCircle, AlertTriangle, Clock, Hourglass, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const ITEMS_PER_PAGE = 10;
-
 export default function Display() {
   const [machines, setMachines] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  useEffect(() => {
+    const calculateItemsPerPage = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      
+      let cols = 1;
+      if (w >= 1536) cols = 5;
+      else if (w >= 1280) cols = 4;
+      else if (w >= 1024) cols = 3;
+      else if (w >= 640) cols = 2;
+
+      // Available height = window height - top padding (pt-28 = 112px max) - bottom padding (pb-6 = 24px)
+      const availableHeight = h - 112 - 24; 
+      // Approximate card height (190px min-h) + gap (20px)
+      const cardHeight = 190;
+      const gap = 20;
+
+      let rows = Math.floor((availableHeight + gap) / (cardHeight + gap));
+      if (rows < 1) rows = 1;
+
+      setItemsPerPage(cols * rows);
+    };
+
+    calculateItemsPerPage();
+    window.addEventListener('resize', calculateItemsPerPage);
+    return () => window.removeEventListener('resize', calculateItemsPerPage);
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -24,7 +51,7 @@ export default function Display() {
   useEffect(() => {
     const q = query(collection(db, 'machines'), orderBy('order', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
       setMachines(ms);
     }, (error) => {
       console.error('Error fetching machines:', error);
@@ -34,18 +61,18 @@ export default function Display() {
   }, []);
 
   useEffect(() => {
-    if (machines.length <= ITEMS_PER_PAGE) {
+    if (machines.length <= itemsPerPage) {
       setCurrentPage(0);
       return;
     }
     const interval = setInterval(() => {
-      setCurrentPage((prev) => (prev + 1) * ITEMS_PER_PAGE >= machines.length ? 0 : prev + 1);
-    }, 15000);
+      setCurrentPage((prev) => (prev + 1) * itemsPerPage >= machines.length ? 0 : prev + 1);
+    }, 8000);
     return () => clearInterval(interval);
-  }, [machines.length]);
+  }, [machines.length, itemsPerPage]);
 
-  const displayedMachines = machines.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
-  const totalPages = Math.ceil(machines.length / ITEMS_PER_PAGE);
+  const displayedMachines = machines.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+  const totalPages = Math.ceil(machines.length / itemsPerPage);
 
   return (
     <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
@@ -82,7 +109,7 @@ export default function Display() {
       <main className="flex-grow pt-24 md:pt-28 pb-6 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
           {displayedMachines.map((m) => (
-            <MachineCard key={m.id} data={m} />
+            <MachineCard key={m.firebaseId || m.id} data={m} />
           ))}
           {machines.length === 0 && (
             <div className="col-span-full flex items-center justify-center h-[50vh] text-gray-500 font-medium">

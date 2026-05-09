@@ -296,7 +296,7 @@ export default function Admin() {
       <main className="flex-grow pt-24 md:pt-28 pb-12 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300">
         
         {showAdd && (
-          <form onSubmit={handleSave} className="glass-card animate-in fade-in slide-in-from-top-4 p-5 md:p-6 rounded-2xl mb-8 grid grid-cols-1 md:grid-cols-6 gap-4 items-end shadow-[0_0_30px_rgba(16,185,129,0.1)] border border-emerald-500/20 bg-emerald-500/5">
+          <form onSubmit={handleSave} className="glass-card animate-in fade-in slide-in-from-top-4 p-5 md:p-6 rounded-2xl mb-8 grid grid-cols-1 md:grid-cols-7 gap-4 items-end shadow-[0_0_30px_rgba(16,185,129,0.1)] border border-emerald-500/20 bg-emerald-500/5">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Novo Reator</label>
               <input required value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="bg-white/5 border border-white/10 outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-white/10 transition-all" placeholder="Ex: AF12" />
@@ -317,7 +317,11 @@ export default function Admin() {
               <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Status</label>
               <ComboInput value={formData.status} options={allStatuses} onChange={v => setFormData({...formData, status: v})} placeholder="Ex: LIBERADO" classNameInput="bg-white/5 border border-white/10 outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-white/10 transition-all w-full" />
             </div>
-            <div className="mt-2 md:col-span-6 flex justify-end">
+            <div className="flex flex-col gap-1.5 relative">
+              <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Horário</label>
+              <input value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-white/5 border border-white/10 outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-white/10 transition-all w-full" placeholder="Ex: 14:30" />
+            </div>
+            <div className="mt-2 md:col-span-7 flex justify-end">
               <button type="submit" className="bg-emerald-500 text-white font-bold text-[11px] md:text-xs uppercase py-3 px-8 rounded-lg hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                Criar Nova OP
               </button>
@@ -399,6 +403,10 @@ export default function Admin() {
                        <div className="w-[130px]">
                          <ComboInput value={formData.status} options={allStatuses} onChange={v => setFormData({...formData, status: v})} placeholder="Status" classNameInput="bg-black/40 border border-white/10 outline-none px-2 py-1 rounded text-[11px] font-black text-white w-full focus:border-emerald-500 focus:bg-black/60 transition-all text-right" />
                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Horário</span>
+                       <input value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-black/40 border border-white/10 outline-none px-2 py-1 rounded text-[11px] font-black text-white w-[130px] focus:border-emerald-500 focus:bg-black/60 transition-all text-right" placeholder="Ex: 14:30" />
                     </div>
                     <button type="submit" className="w-full bg-emerald-500 text-white font-bold text-[11px] uppercase py-2 rounded hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">Salvar Alterações</button>
                   </div>
