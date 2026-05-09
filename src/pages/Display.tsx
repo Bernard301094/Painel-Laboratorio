@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { CheckCircle, AlertTriangle, Clock, Hourglass, Settings } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, Hourglass, Settings, Maximize, Minimize } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Display() {
@@ -9,6 +9,28 @@ export default function Display() {
   const [currentTime, setCurrentTime] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     const calculateItemsPerPage = () => {
@@ -99,6 +121,9 @@ export default function Display() {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
             <span className="text-[10px] md:text-xs font-bold tracking-wider text-gray-300 uppercase">Atualizado: {currentTime}</span>
           </div>
+          <button onClick={toggleFullscreen} className="p-2 text-gray-500 hover:text-emerald-400 transition-colors" title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}>
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          </button>
           <Link to="/admin" target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-emerald-400 transition-colors" title="Acessar Painel Administrativo">
             <Settings className="w-5 h-5" />
           </Link>
@@ -106,8 +131,8 @@ export default function Display() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow pt-24 md:pt-28 pb-6 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
+      <main className="flex-grow pt-24 md:pt-28 pb-6 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300 flex flex-col">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5 flex-grow" style={{ gridAutoRows: '1fr' }}>
           {displayedMachines.map((m) => (
             <MachineCard key={m.firebaseId || m.id} data={m} />
           ))}
