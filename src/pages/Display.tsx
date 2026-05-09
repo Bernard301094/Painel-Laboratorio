@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { CheckCircle, AlertTriangle, Clock, Hourglass, Settings, Maximize, Minimize } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, Hourglass, Settings, Maximize, Minimize, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Display() {
@@ -105,7 +105,7 @@ export default function Display() {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'machines'), orderBy('order', 'asc'));
+    const q = query(collection(db, 'machines'), orderBy('updatedAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
       setMachines(ms);
@@ -193,14 +193,15 @@ const MachineCard = ({ data }: { data: any }) => {
   const isGreen = !isManipuladoLiberado && data.status?.toUpperCase() === 'LIBERADO';
   const isRed = data.status?.toUpperCase() === 'EM AJUSTE';
   const isYellow = data.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
+  const isBlue = data.status?.toUpperCase() === 'EM ANÁLISE';
 
-  const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-400';
-  const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
-  const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-100';
-  const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-gray-600';
-  const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : '';
+  const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-400';
+  const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : isBlue ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
+  const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-100';
+  const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : isBlue ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-600';
+  const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : isBlue ? 'glow-blue' : '';
   
-  const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : Clock;
+  const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
 
   return (
     <div className={`glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full hover:-translate-y-1 transition-all duration-300 ${glowClass}`}>

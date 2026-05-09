@@ -145,7 +145,7 @@ export default function Admin() {
   const uniqueStatuses = Array.from(new Set(machines.map(m => m.status?.toUpperCase() || ''))).filter(Boolean);
 
   const defaultTags = ['MANIPULADO', 'ACABADO'];
-  const defaultStatuses = ['LIBERADO', 'EM AJUSTE', 'AGUARDANDO'];
+  const defaultStatuses = ['LIBERADO', 'EM AJUSTE', 'AGUARDANDO', 'EM ANÁLISE'];
   const defaultReatores = [
     'AF01', 'AF02', 'AF03', 'AF04', 'AF05', 'AF06', 'AF07', 'AF08', 'AF09', 'AF10', 'AF11', 'AF12',
     'AQ01', 'AQ02', 'AQ03', 'AQ04', 'AQ05', 'AQ06', 'AQ07', 'AQ08', 'AQ09', 'AQ10', 'S SECO'
@@ -157,7 +157,7 @@ export default function Admin() {
   const allReatores = Array.from(new Set([...defaultReatores, ...uniqueReatores]));
 
   useEffect(() => {
-    const q = query(collection(db, 'machines'), orderBy('order', 'asc'));
+    const q = query(collection(db, 'machines'), orderBy('updatedAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
       setMachines(ms);
@@ -448,14 +448,15 @@ export default function Admin() {
             const isGreen = !isManipuladoLiberado && m.status?.toUpperCase() === 'LIBERADO';
             const isRed = m.status?.toUpperCase() === 'EM AJUSTE';
             const isYellow = m.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
+            const isBlue = m.status?.toUpperCase() === 'EM ANÁLISE';
 
-            const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-400';
-            const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
-            const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-100';
-            const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-gray-600';
-            const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : '';
+            const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-400';
+            const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : isBlue ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
+            const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-100';
+            const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : isBlue ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-600';
+            const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : isBlue ? 'glow-blue' : '';
             
-            const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : Clock;
+            const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
 
             return (
               <div key={m.firebaseId} className={`glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-full min-h-[190px] hover:-translate-y-1 transition-all duration-300 group ${glowClass}`}>
