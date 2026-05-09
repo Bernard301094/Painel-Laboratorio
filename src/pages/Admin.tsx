@@ -129,6 +129,56 @@ function FilterSelect({ value, options, onChange, placeholder, icon: Icon }: { v
   );
 }
 
+function CardSelect({ value, options, onChange, colorBg = 'bg-[rgba(0,0,0,0.3)]', colorText = 'text-gray-300', className = '' }: { value: string, options: string[], onChange: (v: string) => void, colorBg?: string, colorText?: string, className?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className={`relative ${className}`} ref={containerRef}>
+      <button 
+        type="button"
+        title="Alterar Opção"
+        onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
+        className={`${colorBg} ${colorText} pl-2 pr-6 py-1.5 rounded-lg text-[9px] font-bold tracking-wider uppercase border border-[rgba(255,255,255,0.1)] focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer hover:brightness-110 transition-all flex items-center shadow-sm w-full relative z-10`}
+      >
+        <span className="truncate">{value}</span>
+        <ChevronDown className={`w-3 h-3 absolute right-2 text-current opacity-60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-[100] mt-1 bottom-full mb-1 right-0 min-w-[120px] bg-[#1a1a1a] ring-1 ring-[rgba(255,255,255,0.15)] shadow-[0_10px_40px_rgba(0,0,0,0.5)] rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-bottom-right">
+          <div className="max-h-48 overflow-y-auto py-1 hide-scrollbar">
+            {options.map(o => (
+              <button
+                key={o}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onChange(o);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-[10px] font-bold tracking-wider uppercase hover:bg-[rgba(255,255,255,0.1)] ${value === o ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)]' : 'text-gray-300'} transition-colors`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [machines, setMachines] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -195,13 +245,13 @@ export default function Admin() {
 
       const machineData = {
         id: formData.id.toUpperCase(),
-        product: formData.product,
-        op: formData.op,
-        tag: formData.tag,
-        status: formData.status,
+        product: formData.product || '',
+        op: formData.op || '',
+        tag: formData.tag || 'MANIPULADO',
+        status: formData.status || 'LIBERADO',
         time: formData.time || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         history: history,
-        order: editingId ? oldMachine?.order : machines.length,
+        order: editingId && oldMachine?.order !== undefined ? oldMachine.order : machines.length,
         updatedAt: serverTimestamp()
       };
 
@@ -209,6 +259,37 @@ export default function Admin() {
         await deleteDoc(doc(db, 'machines', editingId));
       }
       await setDoc(ref, machineData);
+
+      // Prepara os horários baseados no histórico para enviar formatado
+      const allTimes: Record<string, string> = {
+        'HORARIO MANIPULADO': '',
+        'HORARIO ACABADO': '',
+        'HORARIO ANALISE MANIPULADO': '',
+        'HORARIO ANALISE ACABADO': '',
+        'HORARIO AJUSTE MANIPULADO': '',
+        'HORARIO AJUSTE ACABADO': '',
+        'HORARIO AGUARDANDO': ''
+      };
+
+      const setTimeByState = (tag: string, status: string, timeString: string) => {
+        const st = status?.toUpperCase() || '';
+        const tg = tag?.toUpperCase() || '';
+        
+        if (st === 'EM ANÁLISE' && tg === 'MANIPULADO') allTimes['HORARIO ANALISE MANIPULADO'] = timeString;
+        else if (st === 'EM ANÁLISE' && tg === 'ACABADO') allTimes['HORARIO ANALISE ACABADO'] = timeString;
+        else if (st === 'EM AJUSTE' && tg === 'MANIPULADO') allTimes['HORARIO AJUSTE MANIPULADO'] = timeString;
+        else if (st === 'EM AJUSTE' && tg === 'ACABADO') allTimes['HORARIO AJUSTE ACABADO'] = timeString;
+        else if (st === 'AGUARDANDO') allTimes['HORARIO AGUARDANDO'] = timeString;
+        else if (st === 'LIBERADO' && tg === 'MANIPULADO') allTimes['HORARIO MANIPULADO'] = timeString;
+        else if (st === 'LIBERADO' && tg === 'ACABADO') allTimes['HORARIO ACABADO'] = timeString;
+      };
+
+      if (Array.isArray(machineData.history)) {
+        machineData.history.forEach((h: any) => {
+          setTimeByState(h.tag, h.status, h.time);
+        });
+      }
+      setTimeByState(machineData.tag, machineData.status, machineData.time);
 
       // Send data via Email (FormSubmit)
       try {
@@ -220,15 +301,20 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `${editingId ? 'Editando' : 'Nova'} OP no App: ${machineData.id} - OP: ${machineData.op}`, // Asunto del correo
+            _subject: `${(editingId || oldMachine) ? 'Editando' : 'Nova'} OP no App: ${machineData.id} - OP: ${machineData.op}`, // Asunto del correo
             _template: "table",
-            Acao: editingId ? 'EDITAR' : 'CRIAR',
+            Acao: (editingId || oldMachine) ? 'EDITAR' : 'CRIAR',
             Reator: machineData.id,
             Produto: machineData.product,
             OP: machineData.op,
             Amostra: machineData.tag,
             Status: machineData.status,
-            Horario: machineData.time
+            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'],
+            'HORARIO ACABADO': allTimes['HORARIO ACABADO'],
+            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'],
+            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'],
+            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'],
+            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO']
           }),
         });
       } catch (emailError) {
@@ -248,6 +334,96 @@ export default function Admin() {
     setFormData({ id: m.id, product: m.product, op: m.op, tag: m.tag, status: m.status, time: m.time });
     setEditingId(m.firebaseId);
     setShowAdd(false); // we edit inline now
+  };
+
+  const handleQuickUpdate = async (m: any, fieldField: 'status' | 'tag', newValue: string) => {
+    try {
+      const ref = doc(db, 'machines', m.firebaseId);
+      let history = m.history || [];
+      if (m[fieldField] !== newValue) {
+        history = [...history, {
+          status: m.status,
+          tag: m.tag,
+          time: m.time,
+          timestamp: new Date().toISOString()
+        }];
+      }
+
+      const updatedMachineData = {
+        ...m,
+        history,
+        [fieldField]: newValue,
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        updatedAt: serverTimestamp()
+      };
+      
+      delete updatedMachineData.firebaseId;
+
+      await setDoc(ref, updatedMachineData);
+
+      // Enviar via Email
+      const allTimes: Record<string, string> = {
+        'HORARIO MANIPULADO': '',
+        'HORARIO ACABADO': '',
+        'HORARIO ANALISE MANIPULADO': '',
+        'HORARIO ANALISE ACABADO': '',
+        'HORARIO AJUSTE MANIPULADO': '',
+        'HORARIO AJUSTE ACABADO': '',
+        'HORARIO AGUARDANDO': ''
+      };
+
+      const setTimeByState = (tag: string, status: string, timeString: string) => {
+        const st = status?.toUpperCase() || '';
+        const tg = tag?.toUpperCase() || '';
+        
+        if (st === 'EM ANÁLISE' && tg === 'MANIPULADO') allTimes['HORARIO ANALISE MANIPULADO'] = timeString;
+        else if (st === 'EM ANÁLISE' && tg === 'ACABADO') allTimes['HORARIO ANALISE ACABADO'] = timeString;
+        else if (st === 'EM AJUSTE' && tg === 'MANIPULADO') allTimes['HORARIO AJUSTE MANIPULADO'] = timeString;
+        else if (st === 'EM AJUSTE' && tg === 'ACABADO') allTimes['HORARIO AJUSTE ACABADO'] = timeString;
+        else if (st === 'AGUARDANDO') allTimes['HORARIO AGUARDANDO'] = timeString;
+        else if (st === 'LIBERADO' && tg === 'MANIPULADO') allTimes['HORARIO MANIPULADO'] = timeString;
+        else if (st === 'LIBERADO' && tg === 'ACABADO') allTimes['HORARIO ACABADO'] = timeString;
+      };
+
+      if (Array.isArray(updatedMachineData.history)) {
+        updatedMachineData.history.forEach((h: any) => {
+          setTimeByState(h.tag, h.status, h.time);
+        });
+      }
+      setTimeByState(updatedMachineData.tag, updatedMachineData.status, updatedMachineData.time);
+
+      try {
+        const destEmail = 'bernard.castillo@tractgroup.com.br';
+        await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            _subject: `Atualizando OP no App: ${updatedMachineData.id} - OP: ${updatedMachineData.op}`,
+            _template: "table",
+            Acao: 'EDITAR',
+            Reator: updatedMachineData.id,
+            Produto: updatedMachineData.product,
+            OP: updatedMachineData.op,
+            Amostra: updatedMachineData.tag,
+            Status: updatedMachineData.status,
+            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'],
+            'HORARIO ACABADO': allTimes['HORARIO ACABADO'],
+            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'],
+            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'],
+            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'],
+            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO']
+          }),
+        });
+      } catch (emailError) {
+        console.error("Error sending email: ", emailError);
+      }
+    } catch (error) {
+       console.error("Error quick update: ", error);
+       alert("Error update: " + error);
+    }
   };
 
   const handleDelete = async () => {
@@ -495,15 +671,27 @@ export default function Admin() {
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-1 z-10 shrink-0">
+                <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-2 z-10 shrink-0">
                   <div className="flex justify-between items-center w-full">
                     <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
                       <Clock className="w-3.5 h-3.5" />
                       {m.time}
                     </span>
-                    <div className={`${colorBg} ${colorText} px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border shadow-sm`}>
-                      <Icon className="w-3 h-3" />
-                      <span className="text-[9px] font-bold tracking-wider uppercase">{m.status}</span>
+                    <div className="flex items-center gap-2">
+                      <CardSelect 
+                        value={m.tag}
+                        options={defaultTags}
+                        onChange={(v) => handleQuickUpdate(m, 'tag', v)}
+                        className="w-[100px]"
+                      />
+                      <CardSelect 
+                        value={m.status}
+                        options={defaultStatuses}
+                        onChange={(v) => handleQuickUpdate(m, 'status', v)}
+                        colorBg={colorBg}
+                        colorText={colorText}
+                        className="w-[110px]"
+                      />
                     </div>
                   </div>
                   {m.history && m.history.length > 0 && (
