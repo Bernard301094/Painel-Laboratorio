@@ -369,7 +369,7 @@ export default function Admin() {
           {filteredMachines.map((m) => {
             if(editingId === m.firebaseId) {
               return (
-                <form key={'edit-'+m.firebaseId} onSubmit={handleSave} className="glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-full min-h-[190px] border border-emerald-500/40 bg-emerald-500/5 animate-in zoom-in-95 duration-200">
+                <form key={'edit-'+m.firebaseId} onSubmit={handleSave} className="bg-[#1a1a1a] rounded-2xl p-5 relative overflow-visible flex flex-col justify-between h-full min-h-[190px] border border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-200 z-50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="w-1/2">
                       <span className="text-[10px] font-bold tracking-wider text-emerald-400 block mb-1 uppercase">Editar Reator</span>
@@ -380,7 +380,7 @@ export default function Admin() {
                     </div>
                   </div>
                   
-                  <div className="space-y-3 flex-grow z-10 pt-1">
+                  <div className="space-y-3 flex-grow pt-1 relative z-30">
                     <div>
                       <span className="text-[10px] font-bold tracking-wider text-gray-400 block mb-0.5 uppercase">Produto</span>
                       <input required value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} className="bg-black/40 border border-white/10 outline-none px-2 py-1 -ml-2 rounded text-[13px] font-bold text-gray-100 w-full focus:border-emerald-500 focus:bg-black/60 transition-all" />
@@ -397,7 +397,7 @@ export default function Admin() {
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-3 border-t border-white/10 flex flex-col gap-3 z-10">
+                  <div className="mt-4 pt-3 border-t border-white/10 flex flex-col gap-3 relative z-20">
                     <div className="flex items-center justify-between">
                        <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Status</span>
                        <div className="w-[130px]">
