@@ -97,11 +97,11 @@ export default function Display() {
   const totalPages = Math.ceil(machines.length / itemsPerPage);
 
   return (
-    <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-[#10b9814d] selection:text-emerald-200">
       <div className="ambient-glow"></div>
       
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a] border-b border-white/10 shadow-xl flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
+      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a] border-b border-[#ffffff1a] shadow-xl flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
         <div>
           <h1 className="font-bold text-2xl md:text-3xl text-gray-100 tracking-tight">Painel de Laboratório</h1>
         </div>
@@ -112,12 +112,12 @@ export default function Display() {
               {Array.from({ length: totalPages }).map((_, i) => (
                 <span 
                   key={i} 
-                  className={`h-1.5 rounded-full transition-all duration-500 mr-1.5 ${i === currentPage ? 'bg-emerald-500 w-6' : 'bg-white/20 w-1.5'}`}
+                  className={`h-1.5 rounded-full transition-all duration-500 mr-1.5 ${i === currentPage ? 'bg-emerald-500 w-6' : 'bg-[#ffffff33] w-1.5'}`}
                 />
               ))}
             </div>
           )}
-          <div className="flex items-center bg-white/5 border border-white/10 px-4 py-2 md:py-2.5 rounded-lg shadow-sm mr-4">
+          <div className="flex items-center bg-[#ffffff0d] border border-[#ffffff1a] px-4 py-2 md:py-2.5 rounded-lg shadow-sm mr-4">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)] mr-2"></span>
             <span className="text-[10px] md:text-xs font-bold tracking-wider text-gray-300 uppercase">Atualizado: {currentTime}</span>
           </div>
@@ -157,7 +157,7 @@ const MachineCard = ({ data }: { data: any }) => {
   const isYellow = data.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
 
   const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-400';
-  const colorBg = isGreen ? 'bg-emerald-500/10 border-emerald-500/20' : isRed ? 'bg-red-500/10 border-red-500/20' : isYellow ? 'bg-amber-500/10 border-amber-500/20' : 'bg-white/5 border-white/10';
+  const colorBg = isGreen ? 'bg-[#10b9811a] border-[#10b98133]' : isRed ? 'bg-[#ef44441a] border-[#ef444433]' : isYellow ? 'bg-[#f59e0b1a] border-[#f59e0b33]' : 'bg-[#ffffff0d] border-[#ffffff1a]';
   const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-100';
   const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-gray-600';
   const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : '';
@@ -186,13 +186,13 @@ const MachineCard = ({ data }: { data: any }) => {
         </div>
         <div className="flex flex-wrap -mx-1.5">
           <div className="w-1/2 px-1.5">
-            <div className="bg-white/5 p-2 rounded-lg border border-white/5 h-full">
+            <div className="bg-[#ffffff0d] p-2 rounded-lg border border-[#ffffff0d] h-full">
               <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
               <p className="text-[13px] font-semibold text-gray-300">{data.op}</p>
             </div>
           </div>
           <div className="w-1/2 px-1.5">
-            <div className="bg-white/5 p-2 rounded-lg border border-white/5 h-full">
+            <div className="bg-[#ffffff0d] p-2 rounded-lg border border-[#ffffff0d] h-full">
               <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
               <p className="text-[13px] font-semibold text-gray-300 uppercase">{data.tag}</p>
             </div>
@@ -200,7 +200,7 @@ const MachineCard = ({ data }: { data: any }) => {
         </div>
       </div>
       
-      <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center z-10">
+      <div className="mt-4 pt-3 border-t border-[#ffffff1a] flex justify-between items-center z-10">
         <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
           <Clock className="w-3.5 h-3.5 mr-1.5" />
           Horário: {data.time}
