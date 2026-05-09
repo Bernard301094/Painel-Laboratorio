@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Painel Laboratório",
+  "description": "Painel de monitoramento e controle de processos laboratoriais.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }
