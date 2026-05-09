@@ -8,28 +8,55 @@ export default function Display() {
   const [machines, setMachines] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const [layoutSpec, setLayoutSpec] = useState({ cols: 1, rows: 1 });
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+    try {
+      const elem = document.documentElement as any;
+      const isFullscreenNow = document.fullscreenElement || elem.webkitFullscreenElement || elem.mozFullScreenElement || elem.msFullscreenElement;
+      
+      if (!isFullscreenNow) {
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        } else if (elem.mozRequestFullScreen) {
+          elem.mozRequestFullScreen();
+        }
+      } else {
+        const doc = document as any;
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen().catch(() => {});
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        } else if (doc.msExitFullscreen) {
+          doc.msExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          doc.mozCancelFullScreen();
+        }
       }
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const elem = document.documentElement as any;
+      const isFullscreenNow = document.fullscreenElement || elem.webkitFullscreenElement || elem.mozFullScreenElement || elem.msFullscreenElement;
+      setIsFullscreen(!!isFullscreenNow);
       setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,19 +72,26 @@ export default function Display() {
 
       // Available height = window height - top padding (pt-28 = 112px max) - bottom padding (pb-6 = 24px)
       const availableHeight = h - 112 - 24; 
-      // Approximate card height (190px min-h) + gap (20px)
-      const cardHeight = 190;
+      // Approximate min card height
+      const cardHeight = 180;
       const gap = 20;
 
       let rows = Math.floor((availableHeight + gap) / (cardHeight + gap));
       if (rows < 1) rows = 1;
 
+      setLayoutSpec({ cols, rows });
       setItemsPerPage(cols * rows);
     };
 
     calculateItemsPerPage();
-    window.addEventListener('resize', calculateItemsPerPage);
-    return () => window.removeEventListener('resize', calculateItemsPerPage);
+    // Use resize listener with slight debounce
+    let timeoutId: any;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(calculateItemsPerPage, 100);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -97,11 +131,11 @@ export default function Display() {
   const totalPages = Math.ceil(machines.length / itemsPerPage);
 
   return (
-    <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-[#10b9814d] selection:text-emerald-200">
+    <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-[rgba(16,185,129,0.3)] selection:text-emerald-200">
       <div className="ambient-glow"></div>
       
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a] border-b border-[#ffffff1a] shadow-xl flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
+      <header className="fixed top-0 w-full z-50 bg-[#0a0a0a] border-b border-[rgba(255,255,255,0.1)] shadow-xl flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
         <div>
           <h1 className="font-bold text-2xl md:text-3xl text-gray-100 tracking-tight">Painel de Laboratório</h1>
         </div>
@@ -112,12 +146,12 @@ export default function Display() {
               {Array.from({ length: totalPages }).map((_, i) => (
                 <span 
                   key={i} 
-                  className={`h-1.5 rounded-full transition-all duration-500 mr-1.5 ${i === currentPage ? 'bg-emerald-500 w-6' : 'bg-[#ffffff33] w-1.5'}`}
+                  className={`h-1.5 rounded-full transition-all duration-500 mr-1.5 ${i === currentPage ? 'bg-emerald-500 w-6' : 'bg-[rgba(255,255,255,0.2)] w-1.5'}`}
                 />
               ))}
             </div>
           )}
-          <div className="flex items-center bg-[#ffffff0d] border border-[#ffffff1a] px-4 py-2 md:py-2.5 rounded-lg shadow-sm mr-4">
+          <div className="flex items-center bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-4 py-2 md:py-2.5 rounded-lg shadow-sm mr-4">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)] mr-2"></span>
             <span className="text-[10px] md:text-xs font-bold tracking-wider text-gray-300 uppercase">Atualizado: {currentTime}</span>
           </div>
@@ -131,15 +165,19 @@ export default function Display() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow pt-24 md:pt-28 pb-6 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300 flex flex-col">
-        <div className="flex flex-wrap -mx-2 md:-mx-2.5 flex-grow content-start">
+      <main className="flex-grow pt-24 md:pt-28 pb-6 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300 flex flex-col h-screen max-h-screen overflow-hidden">
+        <div 
+          className="grid gap-4 md:gap-5 flex-grow"
+          style={{ 
+            gridTemplateColumns: `repeat(${layoutSpec.cols}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${layoutSpec.rows}, minmax(0, 1fr))` 
+          }}
+        >
           {displayedMachines.map((m) => (
-            <div key={m.firebaseId || m.id} className="w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 2xl:w-1/5 p-2 md:p-2.5 flex flex-col">
-              <MachineCard data={m} />
-            </div>
+            <MachineCard key={m.firebaseId || m.id} data={m} />
           ))}
           {machines.length === 0 && (
-            <div className="w-full flex items-center justify-center h-[50vh] text-gray-500 font-medium">
+            <div className="flex items-center justify-center h-full w-full text-gray-500 font-medium" style={{ gridColumn: `1 / -1`, gridRow: `1 / -1` }}>
               <p>Nenhuma OP sendo exibida no momento.</p>
             </div>
           )}
@@ -157,7 +195,7 @@ const MachineCard = ({ data }: { data: any }) => {
   const isYellow = data.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
 
   const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-400';
-  const colorBg = isGreen ? 'bg-[#10b9811a] border-[#10b98133]' : isRed ? 'bg-[#ef44441a] border-[#ef444433]' : isYellow ? 'bg-[#f59e0b1a] border-[#f59e0b33]' : 'bg-[#ffffff0d] border-[#ffffff1a]';
+  const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
   const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : 'text-gray-100';
   const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-gray-600';
   const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : '';
@@ -165,43 +203,39 @@ const MachineCard = ({ data }: { data: any }) => {
   const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : Clock;
 
   return (
-    <div className={`glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-full min-h-[190px] hover:-translate-y-1 transition-all duration-300 ${glowClass}`}>
+    <div className={`glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full hover:-translate-y-1 transition-all duration-300 ${glowClass}`}>
       <div className={`absolute top-0 left-0 w-full h-1 ${indicatorColor}`}></div>
       
-      <div className="flex justify-between items-start mb-3 pt-1">
+      <div className="flex justify-between items-start mb-2 md:mb-3 pt-1 shrink-0">
         <div>
           <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-1 uppercase">Reator</span>
-          <h2 className={`text-3xl font-black tracking-tight ${headerText}`}>{data.id}</h2>
+          <h2 className={`text-2xl md:text-3xl font-black tracking-tight leading-none ${headerText}`}>{data.id}</h2>
         </div>
-        <div className={`${colorBg} ${colorText} px-2.5 py-1.5 rounded-lg flex items-center border shadow-sm`}>
-          <Icon className="w-3.5 h-3.5 mr-1.5" />
-          <span className="text-[9px] font-bold tracking-wider uppercase">{data.status}</span>
+        <div className={`${colorBg} ${colorText} px-2 py-1 md:px-2.5 md:py-1.5 rounded-lg flex items-center border shadow-sm`}>
+          <Icon className="w-3 h-3 md:w-3.5 md:h-3.5 mr-1 md:mr-1.5" />
+          <span className="text-[8px] md:text-[9px] font-bold tracking-wider uppercase">{data.status}</span>
         </div>
       </div>
       
-      <div className="flex-grow z-10 pt-1">
-        <div className="mb-3">
+      <div className="flex-grow flex flex-col justify-center z-10 py-1 min-h-0">
+        <div className="mb-2 md:mb-3 shrink-0">
           <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Produto</span>
-          <p className="text-base font-bold text-gray-200 uppercase leading-tight truncate" title={data.product}>{data.product}</p>
+          <p className="text-sm md:text-base font-bold text-gray-200 uppercase leading-snug line-clamp-2" title={data.product}>{data.product}</p>
         </div>
-        <div className="flex flex-wrap -mx-1.5">
-          <div className="w-1/2 px-1.5">
-            <div className="bg-[#ffffff0d] p-2 rounded-lg border border-[#ffffff0d] h-full">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
-              <p className="text-[13px] font-semibold text-gray-300">{data.op}</p>
-            </div>
+        <div className="flex gap-2 w-full mt-auto">
+          <div className="flex-1 bg-[rgba(255,255,255,0.05)] p-2 rounded-lg border border-[rgba(255,255,255,0.05)] overflow-hidden">
+            <span className="text-[9px] md:text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
+            <p className="text-xs md:text-[13px] font-semibold text-gray-300 truncate">{data.op}</p>
           </div>
-          <div className="w-1/2 px-1.5">
-            <div className="bg-[#ffffff0d] p-2 rounded-lg border border-[#ffffff0d] h-full">
-              <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
-              <p className="text-[13px] font-semibold text-gray-300 uppercase">{data.tag}</p>
-            </div>
+          <div className="flex-1 bg-[rgba(255,255,255,0.05)] p-2 rounded-lg border border-[rgba(255,255,255,0.05)] overflow-hidden">
+            <span className="text-[9px] md:text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
+            <p className="text-xs md:text-[13px] font-semibold text-gray-300 uppercase truncate">{data.tag}</p>
           </div>
         </div>
       </div>
       
-      <div className="mt-4 pt-3 border-t border-[#ffffff1a] flex justify-between items-center z-10">
-        <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
+      <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t border-[rgba(255,255,255,0.1)] flex justify-between items-center z-10 shrink-0">
+        <span className={`text-[9px] md:text-[10px] font-bold tracking-wider uppercase flex items-center ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
           <Clock className="w-3.5 h-3.5 mr-1.5" />
           Horário: {data.time}
         </span>
