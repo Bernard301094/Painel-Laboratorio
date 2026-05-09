@@ -301,7 +301,7 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `${(editingId || oldMachine) ? 'Editando' : 'Nova'} OP no App: ${machineData.id} - OP: ${machineData.op}`, // Asunto del correo
+            _subject: `Nova OP no App ${(editingId || oldMachine) ? '(Edição)' : ''}: ${machineData.id} - OP: ${machineData.op}`,
             _template: "table",
             Acao: (editingId || oldMachine) ? 'EDITAR' : 'CRIAR',
             Reator: machineData.id,
@@ -402,7 +402,7 @@ export default function Admin() {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            _subject: `Atualizando OP no App: ${updatedMachineData.id} - OP: ${updatedMachineData.op}`,
+            _subject: `Nova OP no App (Atualização): ${updatedMachineData.id} - OP: ${updatedMachineData.op}`,
             _template: "table",
             Acao: 'EDITAR',
             Reator: updatedMachineData.id,
