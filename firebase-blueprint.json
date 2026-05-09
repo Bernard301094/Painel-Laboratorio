@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "Machine": {
+      "title": "Machine",
+      "description": "Production machine status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "product": { "type": "string" },
+        "op": { "type": "string" },
+        "tag": { "type": "string" },
+        "status": { "type": "string" },
+        "time": { "type": "string" },
+        "order": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "product", "op", "tag", "status", "time", "order", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/machines/{machineId}": {
+      "schema": { "$ref": "Machine" },
+      "description": "Production machines"
+    }
+  }
+}
