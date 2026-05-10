@@ -187,8 +187,6 @@ function buildAllTimes(history: any[], tag: string, status: string, time: string
     'HORARIO ANALISE MANIPULADO': '',
     'HORARIO ANALISE ACABADO': '',
     'HORARIO AJUSTE MANIPULADO': '',
-    'HORARIO AJUSTE ACABADO': '',
-    'HORARIO AGUARDANDO': ''
   };
 
   const set = (tg: string, st: string, t: string) => {
@@ -197,8 +195,6 @@ function buildAllTimes(history: any[], tag: string, status: string, time: string
     if (s === 'EM ANÁLISE' && g === 'MANIPULADO') allTimes['HORARIO ANALISE MANIPULADO'] = t;
     else if (s === 'EM ANÁLISE' && g === 'ACABADO') allTimes['HORARIO ANALISE ACABADO'] = t;
     else if (s === 'EM AJUSTE' && g === 'MANIPULADO') allTimes['HORARIO AJUSTE MANIPULADO'] = t;
-    else if (s === 'EM AJUSTE' && g === 'ACABADO') allTimes['HORARIO AJUSTE ACABADO'] = t;
-    else if (s === 'AGUARDANDO') allTimes['HORARIO AGUARDANDO'] = t;
     else if (s === 'LIBERADO' && g === 'MANIPULADO') allTimes['HORARIO MANIPULADO'] = t;
     else if (s === 'LIBERADO' && g === 'ACABADO') allTimes['HORARIO ACABADO'] = t;
   };
@@ -217,7 +213,7 @@ async function sendFormEmail(machineData: any, acao: string, allTimes: Record<st
     body: JSON.stringify({
       _subject: `OP_APP | ${machineData.id} | ${machineData.op}`,
       _template: 'table',
-      DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE ACABADO']||''}|FIM`,
+      DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|FIM`,
       Acao: acao,
       Reator: machineData.id,
       Produto: machineData.product,
@@ -230,7 +226,6 @@ async function sendFormEmail(machineData: any, acao: string, allTimes: Record<st
       'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
       'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
       'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
-      'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO'] || ''
     }),
   });
 }
