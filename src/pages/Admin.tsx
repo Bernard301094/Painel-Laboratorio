@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter } from 'lucide-react';
+import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 function ComboInput({ value, options, onChange, placeholder, classNameInput }: { value: string, options: string[], onChange: (v: string) => void, placeholder: string, classNameInput: string }) {
@@ -179,12 +179,70 @@ function CardSelect({ value, options, onChange, colorBg = 'bg-[rgba(0,0,0,0.3)]'
   );
 }
 
+// ─── Helper: build allTimes from a machine's history + current state ───────────
+function buildAllTimes(history: any[], tag: string, status: string, time: string): Record<string, string> {
+  const allTimes: Record<string, string> = {
+    'HORARIO MANIPULADO': '',
+    'HORARIO ACABADO': '',
+    'HORARIO ANALISE MANIPULADO': '',
+    'HORARIO ANALISE ACABADO': '',
+    'HORARIO AJUSTE MANIPULADO': '',
+    'HORARIO AJUSTE ACABADO': '',
+    'HORARIO AGUARDANDO': ''
+  };
+
+  const set = (tg: string, st: string, t: string) => {
+    const s = st?.toUpperCase() || '';
+    const g = tg?.toUpperCase() || '';
+    if (s === 'EM ANÁLISE' && g === 'MANIPULADO') allTimes['HORARIO ANALISE MANIPULADO'] = t;
+    else if (s === 'EM ANÁLISE' && g === 'ACABADO') allTimes['HORARIO ANALISE ACABADO'] = t;
+    else if (s === 'EM AJUSTE' && g === 'MANIPULADO') allTimes['HORARIO AJUSTE MANIPULADO'] = t;
+    else if (s === 'EM AJUSTE' && g === 'ACABADO') allTimes['HORARIO AJUSTE ACABADO'] = t;
+    else if (s === 'AGUARDANDO') allTimes['HORARIO AGUARDANDO'] = t;
+    else if (s === 'LIBERADO' && g === 'MANIPULADO') allTimes['HORARIO MANIPULADO'] = t;
+    else if (s === 'LIBERADO' && g === 'ACABADO') allTimes['HORARIO ACABADO'] = t;
+  };
+
+  if (Array.isArray(history)) history.forEach((h: any) => set(h.tag, h.status, h.time));
+  set(tag, status, time);
+  return allTimes;
+}
+
+// ─── Helper: send email via FormSubmit ─────────────────────────────────────────
+async function sendFormEmail(machineData: any, acao: string, allTimes: Record<string, string>) {
+  const destEmail = 'bernard.castillo@tractgroup.com.br';
+  await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      _subject: `OP_APP | ${machineData.id} | ${machineData.op}`,
+      _template: 'table',
+      DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE ACABADO']||''}|FIM`,
+      Acao: acao,
+      Reator: machineData.id,
+      Produto: machineData.product,
+      OP: machineData.op,
+      Amostra: machineData.tag,
+      Status: machineData.status,
+      Horario: machineData.time,
+      'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'] || '',
+      'HORARIO ACABADO': allTimes['HORARIO ACABADO'] || '',
+      'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
+      'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
+      'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
+      'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO'] || ''
+    }),
+  });
+}
+
 export default function Admin() {
   const [machines, setMachines] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [testRunning, setTestRunning] = useState(false);
+  const [testStep, setTestStep] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
 
@@ -219,6 +277,106 @@ export default function Admin() {
     return () => unsubscribe();
   }, []);
 
+  // ─── Automated Test Function (DEV only) ────────────────────────────────────
+  const runAutoTest = async () => {
+    const TEST_ID = 'AF-TEST';
+    const TEST_DOC_ID = 'AF-TEST';
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    const INTERVAL = 15000; // 15 seconds between steps
+
+    const getTime = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    setTestRunning(true);
+
+    try {
+      // Step 1: Create test OP
+      setTestStep('⚗️ Passo 1/5 — Criando OP de teste...');
+      console.log('[TEST] Step 1: Creating OP');
+      const step1Data = {
+        id: TEST_ID,
+        product: 'PRODUTO TESTE',
+        op: '99999',
+        tag: 'MANIPULADO',
+        status: 'EM ANÁLISE',
+        time: getTime(),
+        history: [],
+        order: 9999,
+        updatedAt: serverTimestamp()
+      };
+      await setDoc(doc(db, 'machines', TEST_DOC_ID), step1Data);
+      const times1 = buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time);
+      await sendFormEmail(step1Data, 'CRIAR', times1);
+
+      // Step 2: EM AJUSTE
+      await delay(INTERVAL);
+      setTestStep('🔧 Passo 2/5 — Mudando para EM AJUSTE...');
+      console.log('[TEST] Step 2: EM AJUSTE');
+      const snap2 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
+      const prev2 = snap2.data() as any;
+      const history2 = [...(prev2.history || []), { status: prev2.status, tag: prev2.tag, time: prev2.time, timestamp: new Date().toISOString() }];
+      const step2Data = { ...prev2, status: 'EM AJUSTE', time: getTime(), history: history2, updatedAt: serverTimestamp() };
+      delete step2Data.firebaseId;
+      await setDoc(doc(db, 'machines', TEST_DOC_ID), step2Data);
+      const times2 = buildAllTimes(history2, step2Data.tag, step2Data.status, step2Data.time);
+      await sendFormEmail(step2Data, 'EDITAR', times2);
+
+      // Step 3: AGUARDANDO
+      await delay(INTERVAL);
+      setTestStep('⏳ Passo 3/5 — Mudando para AGUARDANDO...');
+      console.log('[TEST] Step 3: AGUARDANDO');
+      const snap3 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
+      const prev3 = snap3.data() as any;
+      const history3 = [...(prev3.history || []), { status: prev3.status, tag: prev3.tag, time: prev3.time, timestamp: new Date().toISOString() }];
+      const step3Data = { ...prev3, status: 'AGUARDANDO', time: getTime(), history: history3, updatedAt: serverTimestamp() };
+      delete step3Data.firebaseId;
+      await setDoc(doc(db, 'machines', TEST_DOC_ID), step3Data);
+      const times3 = buildAllTimes(history3, step3Data.tag, step3Data.status, step3Data.time);
+      await sendFormEmail(step3Data, 'EDITAR', times3);
+
+      // Step 4: ACABADO + EM ANÁLISE
+      await delay(INTERVAL);
+      setTestStep('🔬 Passo 4/5 — Mudando para ACABADO + EM ANÁLISE...');
+      console.log('[TEST] Step 4: ACABADO + EM ANÁLISE');
+      const snap4 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
+      const prev4 = snap4.data() as any;
+      const history4 = [...(prev4.history || []), { status: prev4.status, tag: prev4.tag, time: prev4.time, timestamp: new Date().toISOString() }];
+      const step4Data = { ...prev4, tag: 'ACABADO', status: 'EM ANÁLISE', time: getTime(), history: history4, updatedAt: serverTimestamp() };
+      delete step4Data.firebaseId;
+      await setDoc(doc(db, 'machines', TEST_DOC_ID), step4Data);
+      const times4 = buildAllTimes(history4, step4Data.tag, step4Data.status, step4Data.time);
+      await sendFormEmail(step4Data, 'EDITAR', times4);
+
+      // Step 5: LIBERADO
+      await delay(INTERVAL);
+      setTestStep('✅ Passo 5/5 — Mudando para LIBERADO...');
+      console.log('[TEST] Step 5: LIBERADO');
+      const snap5 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
+      const prev5 = snap5.data() as any;
+      const history5 = [...(prev5.history || []), { status: prev5.status, tag: prev5.tag, time: prev5.time, timestamp: new Date().toISOString() }];
+      const step5Data = { ...prev5, status: 'LIBERADO', time: getTime(), history: history5, updatedAt: serverTimestamp() };
+      delete step5Data.firebaseId;
+      await setDoc(doc(db, 'machines', TEST_DOC_ID), step5Data);
+      const times5 = buildAllTimes(history5, step5Data.tag, step5Data.status, step5Data.time);
+      await sendFormEmail(step5Data, 'EDITAR', times5);
+
+      // Step 6: Cleanup
+      await delay(INTERVAL);
+      setTestStep('🗑️ Limpando OP de teste...');
+      console.log('[TEST] Step 6: Cleanup');
+      await deleteDoc(doc(db, 'machines', TEST_DOC_ID));
+
+      setTestStep('🎉 Teste concluído com sucesso!');
+      console.log('[TEST] Complete!');
+      setTimeout(() => setTestStep(null), 4000);
+    } catch (err) {
+      console.error('[TEST] Error:', err);
+      setTestStep('❌ Erro no teste. Ver console.');
+      setTimeout(() => setTestStep(null), 5000);
+    } finally {
+      setTestRunning(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.id.trim()) return;
@@ -232,7 +390,7 @@ export default function Admin() {
       
       let history = oldMachine?.history || [];
       if (oldMachine && oldMachine.op !== formData.op) {
-         history = []; // Nova OP no mesmo reator, limpa o histórico
+         history = [];
       } else if (oldMachine) {
         if (oldMachine.status !== formData.status || oldMachine.tag !== formData.tag) {
           history = [...history, {
@@ -261,82 +419,27 @@ export default function Admin() {
       }
       await setDoc(ref, machineData);
 
-      // Prepara os horários baseados no histórico para enviar formatado
-      const allTimes: Record<string, string> = {
-        'HORARIO MANIPULADO': '',
-        'HORARIO ACABADO': '',
-        'HORARIO ANALISE MANIPULADO': '',
-        'HORARIO ANALISE ACABADO': '',
-        'HORARIO AJUSTE MANIPULADO': '',
-        'HORARIO AJUSTE ACABADO': '',
-        'HORARIO AGUARDANDO': ''
-      };
+      const allTimes = buildAllTimes(machineData.history, machineData.tag, machineData.status, machineData.time);
 
-      const setTimeByState = (tag: string, status: string, timeString: string) => {
-        const st = status?.toUpperCase() || '';
-        const tg = tag?.toUpperCase() || '';
-        
-        if (st === 'EM ANÁLISE' && tg === 'MANIPULADO') allTimes['HORARIO ANALISE MANIPULADO'] = timeString;
-        else if (st === 'EM ANÁLISE' && tg === 'ACABADO') allTimes['HORARIO ANALISE ACABADO'] = timeString;
-        else if (st === 'EM AJUSTE' && tg === 'MANIPULADO') allTimes['HORARIO AJUSTE MANIPULADO'] = timeString;
-        else if (st === 'EM AJUSTE' && tg === 'ACABADO') allTimes['HORARIO AJUSTE ACABADO'] = timeString;
-        else if (st === 'AGUARDANDO') allTimes['HORARIO AGUARDANDO'] = timeString;
-        else if (st === 'LIBERADO' && tg === 'MANIPULADO') allTimes['HORARIO MANIPULADO'] = timeString;
-        else if (st === 'LIBERADO' && tg === 'ACABADO') allTimes['HORARIO ACABADO'] = timeString;
-      };
-
-      if (Array.isArray(machineData.history)) {
-        machineData.history.forEach((h: any) => {
-          setTimeByState(h.tag, h.status, h.time);
-        });
-      }
-      setTimeByState(machineData.tag, machineData.status, machineData.time);
-
-      // Send data via Email (FormSubmit)
       try {
-        const destEmail = 'bernard.castillo@tractgroup.com.br'; // Cambia esto si quieres otro correo
-        await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            _subject: `OP_APP | ${machineData.id} | ${machineData.op}`,
-            _template: "table",
-            DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE ACABADO']||''}|FIM`,
-            Acao: (editingId || oldMachine) ? 'EDITAR' : 'CRIAR',
-            Reator: machineData.id,
-            Produto: machineData.product,
-            OP: machineData.op,
-            Amostra: machineData.tag,
-            Status: machineData.status,
-            Horario: machineData.time,
-            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'] || '',
-            'HORARIO ACABADO': allTimes['HORARIO ACABADO'] || '',
-            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
-            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
-            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
-            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO'] || ''
-          }),
-        });
+        await sendFormEmail(machineData, (editingId || oldMachine) ? 'EDITAR' : 'CRIAR', allTimes);
       } catch (emailError) {
-        console.error("Error sending to email: ", emailError);
+        console.error('Error sending to email: ', emailError);
       }
 
       setFormData({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
       setShowAdd(false);
       setEditingId(null);
     } catch (error) {
-      console.error("Error saving doc: ", error);
-      alert("Error saving: " + error);
+      console.error('Error saving doc: ', error);
+      alert('Error saving: ' + error);
     }
   };
 
   const handleEdit = (m: any) => {
     setFormData({ id: m.id, product: m.product, op: m.op, tag: m.tag, status: m.status, time: m.time });
     setEditingId(m.firebaseId);
-    setShowAdd(false); // we edit inline now
+    setShowAdd(false);
   };
 
   const handleQuickUpdate = async (m: any, fieldField: 'status' | 'tag' | 'time', newValue: string) => {
@@ -347,12 +450,12 @@ export default function Admin() {
       if (fieldField === 'status' || fieldField === 'tag') {
         if (m[fieldField] !== newValue) {
           if (!inputTimeValue || inputTimeValue === m.time) {
-            setToastMessage("Atenção: É obrigatório modificar o horário. Por favor, atualize o horário no campo ao lado antes de registrar o novo status ou amostra.");
+            setToastMessage('Atenção: É obrigatório modificar o horário. Por favor, atualize o horário no campo ao lado antes de registrar o novo status ou amostra.');
             setTimeout(() => setToastMessage(null), 5000);
             return;
           }
         } else {
-          return; // Nenhuma mudança
+          return;
         }
       }
 
@@ -380,71 +483,16 @@ export default function Admin() {
 
       await setDoc(ref, updatedMachineData);
 
-      // Enviar via Email
-      const allTimes: Record<string, string> = {
-        'HORARIO MANIPULADO': '',
-        'HORARIO ACABADO': '',
-        'HORARIO ANALISE MANIPULADO': '',
-        'HORARIO ANALISE ACABADO': '',
-        'HORARIO AJUSTE MANIPULADO': '',
-        'HORARIO AJUSTE ACABADO': '',
-        'HORARIO AGUARDANDO': ''
-      };
-
-      const setTimeByState = (tag: string, status: string, timeString: string) => {
-        const st = status?.toUpperCase() || '';
-        const tg = tag?.toUpperCase() || '';
-        
-        if (st === 'EM ANÁLISE' && tg === 'MANIPULADO') allTimes['HORARIO ANALISE MANIPULADO'] = timeString;
-        else if (st === 'EM ANÁLISE' && tg === 'ACABADO') allTimes['HORARIO ANALISE ACABADO'] = timeString;
-        else if (st === 'EM AJUSTE' && tg === 'MANIPULADO') allTimes['HORARIO AJUSTE MANIPULADO'] = timeString;
-        else if (st === 'EM AJUSTE' && tg === 'ACABADO') allTimes['HORARIO AJUSTE ACABADO'] = timeString;
-        else if (st === 'AGUARDANDO') allTimes['HORARIO AGUARDANDO'] = timeString;
-        else if (st === 'LIBERADO' && tg === 'MANIPULADO') allTimes['HORARIO MANIPULADO'] = timeString;
-        else if (st === 'LIBERADO' && tg === 'ACABADO') allTimes['HORARIO ACABADO'] = timeString;
-      };
-
-      if (Array.isArray(updatedMachineData.history)) {
-        updatedMachineData.history.forEach((h: any) => {
-          setTimeByState(h.tag, h.status, h.time);
-        });
-      }
-      setTimeByState(updatedMachineData.tag, updatedMachineData.status, updatedMachineData.time);
+      const allTimes = buildAllTimes(updatedMachineData.history, updatedMachineData.tag, updatedMachineData.status, updatedMachineData.time);
 
       try {
-        const rawDataLine = `PARSE_DATA|${updatedMachineData.id}|${updatedMachineData.product}|${updatedMachineData.op}|${updatedMachineData.tag}|${updatedMachineData.status}|${updatedMachineData.time}`;
-        const destEmail = 'bernard.castillo@tractgroup.com.br';
-        await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            _subject: `OP_APP | ${updatedMachineData.id} | ${updatedMachineData.op}`,
-            _template: "table",
-            DADOS_SISTEMA: `PARSE_DATA|${updatedMachineData.id}|${updatedMachineData.product}|${updatedMachineData.op}|${updatedMachineData.tag}|${updatedMachineData.status}|${updatedMachineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE ACABADO']||''}|FIM`,
-            Acao: 'EDITAR',
-            Reator: updatedMachineData.id,
-            Produto: updatedMachineData.product,
-            OP: updatedMachineData.op,
-            Amostra: updatedMachineData.tag,
-            Status: updatedMachineData.status,
-            Horario: updatedMachineData.time,
-            'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'] || '',
-            'HORARIO ACABADO': allTimes['HORARIO ACABADO'] || '',
-            'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
-            'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
-            'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
-            'HORARIO AJUSTE ACABADO': allTimes['HORARIO AJUSTE ACABADO'] || ''
-          }),
-        });
+        await sendFormEmail(updatedMachineData, 'EDITAR', allTimes);
       } catch (emailError) {
-        console.error("Error sending email: ", emailError);
+        console.error('Error sending email: ', emailError);
       }
     } catch (error) {
-       console.error("Error quick update: ", error);
-       alert("Error update: " + error);
+       console.error('Error quick update: ', error);
+       alert('Error update: ' + error);
     }
   };
 
@@ -454,7 +502,7 @@ export default function Admin() {
         await deleteDoc(doc(db, 'machines', deleteConfirmId));
         setDeleteConfirmId(null);
       } catch (error) {
-         console.error("Error deleting doc: ", error);
+         console.error('Error deleting doc: ', error);
       }
     }
   };
@@ -496,6 +544,16 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Test Step Toast */}
+      {testStep && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-5 duration-300">
+          <div className="glass-card bg-[#141414] px-5 py-3 rounded-xl border border-[rgba(99,102,241,0.4)] shadow-[0_0_30px_rgba(99,102,241,0.2)] flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+            <span className="text-indigo-300 text-sm font-semibold">{testStep}</span>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(0,0,0,0.6)] backdrop-blur-sm px-4">
@@ -521,19 +579,35 @@ export default function Admin() {
           <h1 className="font-bold text-xl md:text-2xl text-gray-100 tracking-tight">Painel Admin</h1>
         </div>
         
-        <div className="flex items-center gap-4">
-           <Link to="/" className="text-gray-400 hover:text-white font-medium transition-colors text-sm px-4">Ir para TV</Link>
-           <button 
-              onClick={() => {
-                setShowAdd(!showAdd);
-                if(showAdd) setEditingId(null);
-                setFormData({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
-              }}
-              className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 md:px-5 md:py-2.5 rounded-lg font-bold uppercase text-[10px] md:text-xs hover:bg-emerald-600 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+        <div className="flex items-center gap-3">
+          {/* DEV-only: Automated Test Button */}
+          {import.meta.env.DEV && (
+            <button
+              onClick={runAutoTest}
+              disabled={testRunning}
+              title="Teste automático do ciclo completo de uma OP (apenas em DEV)"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold uppercase text-[10px] transition-all border ${
+                testRunning
+                  ? 'bg-indigo-900 border-indigo-700 text-indigo-400 cursor-not-allowed opacity-60'
+                  : 'bg-[rgba(99,102,241,0.1)] border-[rgba(99,102,241,0.3)] text-indigo-400 hover:bg-[rgba(99,102,241,0.2)] hover:border-indigo-500'
+              }`}
             >
-              {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {showAdd ? 'Cancelar' : 'Nova OP'}
+              <FlaskConical className="w-4 h-4" />
+              {testRunning ? 'Testando...' : 'Teste Auto'}
             </button>
+          )}
+          <Link to="/" className="text-gray-400 hover:text-white font-medium transition-colors text-sm px-4">Ir para TV</Link>
+          <button 
+             onClick={() => {
+               setShowAdd(!showAdd);
+               if(showAdd) setEditingId(null);
+               setFormData({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
+             }}
+             className="flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 md:px-5 md:py-2.5 rounded-lg font-bold uppercase text-[10px] md:text-xs hover:bg-emerald-600 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+           >
+             {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+             {showAdd ? 'Cancelar' : 'Nova OP'}
+           </button>
         </div>
       </header>
 
@@ -659,7 +733,6 @@ export default function Admin() {
               );
             }
 
-            // Normal Card display when not being edited
             const isManipuladoLiberado = m.tag?.toUpperCase() === 'MANIPULADO' && m.status?.toUpperCase() === 'LIBERADO';
             
             const isGreen = !isManipuladoLiberado && m.status?.toUpperCase() === 'LIBERADO';
@@ -761,4 +834,3 @@ export default function Admin() {
     </div>
   );
 }
-
