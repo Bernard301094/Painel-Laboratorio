@@ -277,91 +277,63 @@ export default function Admin() {
     const TEST_ID = 'AF-TEST';
     const TEST_DOC_ID = 'AF-TEST';
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    const INTERVAL = 15000; // 15 seconds between steps
+    const INTERVAL = 15000;
 
     const getTime = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     setTestRunning(true);
 
     try {
-      // Step 1: Create test OP
       setTestStep('⚗️ Passo 1/5 — Criando OP de teste...');
-      console.log('[TEST] Step 1: Creating OP');
-      const step1Data = {
-        id: TEST_ID,
-        product: 'PRODUTO TESTE',
-        op: '99999',
-        tag: 'MANIPULADO',
-        status: 'EM ANÁLISE',
-        time: getTime(),
-        history: [],
-        order: 9999,
-        updatedAt: serverTimestamp()
-      };
+      const step1Data = { id: TEST_ID, product: 'PRODUTO TESTE', op: '99999', tag: 'MANIPULADO', status: 'EM ANÁLISE', time: getTime(), history: [], order: 9999, updatedAt: serverTimestamp() };
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step1Data);
-      const times1 = buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time);
-      await sendFormEmail(step1Data, 'CRIAR', times1);
+      await sendFormEmail(step1Data, 'CRIAR', buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time));
 
-      // Step 2: EM AJUSTE
       await delay(INTERVAL);
       setTestStep('🔧 Passo 2/5 — Mudando para EM AJUSTE...');
-      console.log('[TEST] Step 2: EM AJUSTE');
       const snap2 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
       const prev2 = snap2.data() as any;
       const history2 = [...(prev2.history || []), { status: prev2.status, tag: prev2.tag, time: prev2.time, timestamp: new Date().toISOString() }];
       const step2Data = { ...prev2, status: 'EM AJUSTE', time: getTime(), history: history2, updatedAt: serverTimestamp() };
       delete step2Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step2Data);
-      const times2 = buildAllTimes(history2, step2Data.tag, step2Data.status, step2Data.time);
-      await sendFormEmail(step2Data, 'EDITAR', times2);
+      await sendFormEmail(step2Data, 'EDITAR', buildAllTimes(history2, step2Data.tag, step2Data.status, step2Data.time));
 
-      // Step 3: AGUARDANDO
       await delay(INTERVAL);
       setTestStep('⏳ Passo 3/5 — Mudando para AGUARDANDO...');
-      console.log('[TEST] Step 3: AGUARDANDO');
       const snap3 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
       const prev3 = snap3.data() as any;
       const history3 = [...(prev3.history || []), { status: prev3.status, tag: prev3.tag, time: prev3.time, timestamp: new Date().toISOString() }];
       const step3Data = { ...prev3, status: 'AGUARDANDO', time: getTime(), history: history3, updatedAt: serverTimestamp() };
       delete step3Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step3Data);
-      const times3 = buildAllTimes(history3, step3Data.tag, step3Data.status, step3Data.time);
-      await sendFormEmail(step3Data, 'EDITAR', times3);
+      await sendFormEmail(step3Data, 'EDITAR', buildAllTimes(history3, step3Data.tag, step3Data.status, step3Data.time));
 
-      // Step 4: ACABADO + EM ANÁLISE
       await delay(INTERVAL);
       setTestStep('🔬 Passo 4/5 — Mudando para ACABADO + EM ANÁLISE...');
-      console.log('[TEST] Step 4: ACABADO + EM ANÁLISE');
       const snap4 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
       const prev4 = snap4.data() as any;
       const history4 = [...(prev4.history || []), { status: prev4.status, tag: prev4.tag, time: prev4.time, timestamp: new Date().toISOString() }];
       const step4Data = { ...prev4, tag: 'ACABADO', status: 'EM ANÁLISE', time: getTime(), history: history4, updatedAt: serverTimestamp() };
       delete step4Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step4Data);
-      const times4 = buildAllTimes(history4, step4Data.tag, step4Data.status, step4Data.time);
-      await sendFormEmail(step4Data, 'EDITAR', times4);
+      await sendFormEmail(step4Data, 'EDITAR', buildAllTimes(history4, step4Data.tag, step4Data.status, step4Data.time));
 
-      // Step 5: LIBERADO
       await delay(INTERVAL);
       setTestStep('✅ Passo 5/5 — Mudando para LIBERADO...');
-      console.log('[TEST] Step 5: LIBERADO');
       const snap5 = await getDoc(doc(db, 'machines', TEST_DOC_ID));
       const prev5 = snap5.data() as any;
       const history5 = [...(prev5.history || []), { status: prev5.status, tag: prev5.tag, time: prev5.time, timestamp: new Date().toISOString() }];
       const step5Data = { ...prev5, status: 'LIBERADO', time: getTime(), history: history5, updatedAt: serverTimestamp() };
       delete step5Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step5Data);
-      const times5 = buildAllTimes(history5, step5Data.tag, step5Data.status, step5Data.time);
-      await sendFormEmail(step5Data, 'EDITAR', times5);
+      await sendFormEmail(step5Data, 'EDITAR', buildAllTimes(history5, step5Data.tag, step5Data.status, step5Data.time));
 
-      // Step 6: Cleanup
       await delay(INTERVAL);
       setTestStep('🗑️ Limpando OP de teste...');
-      console.log('[TEST] Step 6: Cleanup');
       await deleteDoc(doc(db, 'machines', TEST_DOC_ID));
 
       setTestStep('🎉 Teste concluído com sucesso!');
-      console.log('[TEST] Complete!');
       setTimeout(() => setTestStep(null), 4000);
     } catch (err) {
       console.error('[TEST] Error:', err);
@@ -381,11 +353,16 @@ export default function Admin() {
       const dbDocId = reatorFormattedId;
       const ref = doc(db, 'machines', dbDocId);
       
-      const oldMachine = editingId ? machines.find(m => m.firebaseId === editingId) : machines.find(m => m.firebaseId === reatorFormattedId || m.id.toUpperCase() === formData.id.trim().toUpperCase());
+      const oldMachine = editingId
+        ? machines.find(m => m.firebaseId === editingId)
+        : machines.find(m => m.firebaseId === reatorFormattedId || m.id.toUpperCase() === formData.id.trim().toUpperCase());
       
+      // Detectar si la OP cambió → limpiar historial y notificar RESETAR
+      const opChanged = oldMachine && oldMachine.op !== formData.op;
+
       let history = oldMachine?.history || [];
-      if (oldMachine && oldMachine.op !== formData.op) {
-         history = [];
+      if (opChanged) {
+        history = [];
       } else if (oldMachine) {
         if (oldMachine.status !== formData.status || oldMachine.tag !== formData.tag) {
           history = [...history, {
@@ -404,7 +381,7 @@ export default function Admin() {
         tag: formData.tag || 'MANIPULADO',
         status: formData.status || 'LIBERADO',
         time: formData.time || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        history: history,
+        history,
         order: editingId && oldMachine?.order !== undefined ? oldMachine.order : machines.length,
         updatedAt: serverTimestamp()
       };
@@ -417,7 +394,12 @@ export default function Admin() {
       const allTimes = buildAllTimes(machineData.history, machineData.tag, machineData.status, machineData.time);
 
       try {
-        await sendFormEmail(machineData, (editingId || oldMachine) ? 'EDITAR' : 'CRIAR', allTimes);
+        // Se a OP mudou → envia RESETAR primeiro para o Power Automate apagar os itens antigos do SharePoint
+        if (opChanged) {
+          await sendFormEmail({ ...machineData, op: oldMachine.op }, 'RESETAR', {});
+        }
+        const acao = opChanged ? 'CRIAR' : (editingId || oldMachine) ? 'EDITAR' : 'CRIAR';
+        await sendFormEmail(machineData, acao, allTimes);
       } catch (emailError) {
         console.error('Error sending to email: ', emailError);
       }
@@ -520,7 +502,6 @@ export default function Admin() {
     <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-[rgba(16,185,129,0.3)] selection:text-emerald-200">
       <div className="ambient-glow"></div>
       
-      {/* Toast Notification Modal */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-[100] animate-in fade-in slide-in-from-top-5 duration-300">
           <div className="glass-card bg-[#141414] p-4 rounded-xl border border-[rgba(245,158,11,0.3)] shadow-[0_0_30px_rgba(245,158,11,0.15)] flex items-start gap-4 max-w-sm">
@@ -529,17 +510,13 @@ export default function Admin() {
               <h4 className="font-semibold text-amber-500 mb-1 text-sm">Ação Necessária</h4>
               <p className="text-gray-300 text-xs leading-relaxed">{toastMessage}</p>
             </div>
-            <button 
-              onClick={() => setToastMessage(null)}
-              className="text-gray-500 hover:text-gray-300 transition-colors shrink-0"
-            >
+            <button onClick={() => setToastMessage(null)} className="text-gray-500 hover:text-gray-300 transition-colors shrink-0">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Test Step Toast */}
       {testStep && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-5 duration-300">
           <div className="glass-card bg-[#141414] px-5 py-3 rounded-xl border border-[rgba(99,102,241,0.4)] shadow-[0_0_30px_rgba(99,102,241,0.2)] flex items-center gap-3">
@@ -549,7 +526,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(0,0,0,0.6)] backdrop-blur-sm px-4">
           <div className="glass-card bg-[#141414] p-6 rounded-2xl w-full max-w-sm border border-[rgba(239,68,68,0.3)] shadow-[0_0_40px_rgba(239,68,68,0.15)] animate-in fade-in zoom-in-95 duration-200">
@@ -568,14 +544,12 @@ export default function Admin() {
         </div>
       )}
       
-      {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-[rgba(10,10,10,0.8)] backdrop-blur-md border-b border-[rgba(255,255,255,0.1)] shadow-[0_4px_30px_rgba(0,0,0,0.5)] flex justify-between items-center px-6 md:px-10 h-16 md:h-20">
         <div>
           <h1 className="font-bold text-xl md:text-2xl text-gray-100 tracking-tight">Painel Admin</h1>
         </div>
         
         <div className="flex items-center gap-3">
-          {/* DEV-only: Automated Test Button */}
           {import.meta.env.DEV && (
             <button
               onClick={runAutoTest}
@@ -606,7 +580,6 @@ export default function Admin() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-grow pt-24 md:pt-28 pb-12 px-6 lg:px-8 mx-auto w-full relative z-10 transition-all duration-300">
         
         {showAdd && (
@@ -636,14 +609,11 @@ export default function Admin() {
               <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] outline-none px-3 py-2.5 rounded-lg text-sm text-gray-100 focus:border-emerald-500 focus:bg-[rgba(255,255,255,0.1)] transition-all w-full" placeholder="Ex: 14:30" />
             </div>
             <div className="mt-2 md:col-span-7 flex justify-end">
-              <button type="submit" className="bg-emerald-500 text-white font-bold text-[11px] md:text-xs uppercase py-3 px-8 rounded-lg hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-               Criar Nova OP
-              </button>
+              <button type="submit" className="bg-emerald-500 text-white font-bold text-[11px] md:text-xs uppercase py-3 px-8 rounded-lg hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">Criar Nova OP</button>
             </div>
           </form>
         )}
 
-        {/* Filters Section */}
         <div className="flex flex-col md:flex-row items-center gap-4 mb-6 relative z-30">
           <div className="relative w-full md:w-96 group z-10">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
@@ -655,26 +625,12 @@ export default function Admin() {
               className="bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] shadow-sm outline-none w-full py-2.5 pl-10 pr-4 rounded-xl text-sm text-gray-100 focus:border-emerald-400 focus:bg-[rgba(255,255,255,0.1)] transition-all"
             />
           </div>
-          
           <div className="flex flex-wrap items-center gap-4 w-full md:w-auto pb-2 md:pb-0 z-20">
             <div className="w-full sm:w-auto min-w-[170px]">
-              <FilterSelect 
-                value={filterTag} 
-                onChange={setFilterTag}
-                options={allTags}
-                placeholder="Todas Amostras"
-                icon={Filter}
-              />
+              <FilterSelect value={filterTag} onChange={setFilterTag} options={allTags} placeholder="Todas Amostras" icon={Filter} />
             </div>
-            
             <div className="w-full sm:w-auto min-w-[170px]">
-              <FilterSelect 
-                value={filterStatus} 
-                onChange={setFilterStatus}
-                options={allStatuses}
-                placeholder="Todos Status"
-                icon={Filter}
-              />
+              <FilterSelect value={filterStatus} onChange={setFilterStatus} options={allStatuses} placeholder="Todos Status" icon={Filter} />
             </div>
           </div>
         </div>
@@ -693,7 +649,6 @@ export default function Admin() {
                        <button type="button" onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:text-white bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] rounded transition-colors"><X className="w-4 h-4"/></button>
                     </div>
                   </div>
-                  
                   <div className="space-y-3 flex-grow pt-1 relative z-30">
                     <div>
                       <span className="text-[10px] font-bold tracking-wider text-gray-400 block mb-0.5 uppercase">Produto</span>
@@ -710,7 +665,6 @@ export default function Admin() {
                       </div>
                     </div>
                   </div>
-                  
                   <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-3 relative z-20">
                     <div className="flex items-center justify-between">
                        <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Status</span>
@@ -720,7 +674,7 @@ export default function Admin() {
                     </div>
                     <div className="flex items-center justify-between">
                        <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Horário</span>
-                       <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-[130px] focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" placeholder="Ex: 14:30" />
+                       <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-[130px] focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" />
                     </div>
                     <button type="submit" className="w-full bg-emerald-500 text-white font-bold text-[11px] uppercase py-2 rounded hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">Salvar Alterações</button>
                   </div>
@@ -729,24 +683,20 @@ export default function Admin() {
             }
 
             const isManipuladoLiberado = m.tag?.toUpperCase() === 'MANIPULADO' && m.status?.toUpperCase() === 'LIBERADO';
-            
             const isGreen = !isManipuladoLiberado && m.status?.toUpperCase() === 'LIBERADO';
             const isRed = m.status?.toUpperCase() === 'EM AJUSTE';
             const isYellow = m.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
             const isBlue = m.status?.toUpperCase() === 'EM ANÁLISE';
-
             const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-400';
             const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : isBlue ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
             const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-100';
             const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : isBlue ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-600';
             const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : isBlue ? 'glow-blue' : '';
-            
             const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
 
             return (
               <div key={m.firebaseId} className={`glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-full min-h-[190px] hover:-translate-y-1 transition-all duration-300 group ${glowClass}`}>
                 <div className={`absolute top-0 left-0 w-full h-1 ${indicatorColor}`}></div>
-                
                 <div className="absolute top-3 right-3 flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity z-20">
                     <button onClick={(e) => { e.preventDefault(); handleEdit(m); }} className="p-1.5 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-md hover:bg-[rgba(255,255,255,0.1)] hover:text-white text-gray-400 transition-all shadow-sm">
                       <Edit2 className="w-4 h-4" />
@@ -755,14 +705,12 @@ export default function Admin() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                 </div>
-
                 <div className="flex justify-between items-start mb-3 pt-1">
                   <div>
                     <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-1 uppercase">Reator</span>
                     <h2 className={`text-3xl font-black tracking-tight ${headerText}`}>{m.id}</h2>
                   </div>
                 </div>
-                
                 <div className="space-y-3 flex-grow z-10 pt-1">
                   <div>
                     <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Produto</span>
@@ -779,7 +727,6 @@ export default function Admin() {
                     </div>
                   </div>
                 </div>
-                
                 <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-2 z-10 shrink-0">
                   <div className="flex justify-between items-center w-full">
                     <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
@@ -794,20 +741,8 @@ export default function Admin() {
                       />
                     </span>
                     <div className="flex items-center gap-2">
-                      <CardSelect 
-                        value={m.tag}
-                        options={defaultTags}
-                        onChange={(v) => handleQuickUpdate(m, 'tag', v)}
-                        className="w-[100px]"
-                      />
-                      <CardSelect 
-                        value={m.status}
-                        options={defaultStatuses}
-                        onChange={(v) => handleQuickUpdate(m, 'status', v)}
-                        colorBg={colorBg}
-                        colorText={colorText}
-                        className="w-[110px]"
-                      />
+                      <CardSelect value={m.tag} options={defaultTags} onChange={(v) => handleQuickUpdate(m, 'tag', v)} className="w-[100px]" />
+                      <CardSelect value={m.status} options={defaultStatuses} onChange={(v) => handleQuickUpdate(m, 'status', v)} colorBg={colorBg} colorText={colorText} className="w-[110px]" />
                     </div>
                   </div>
                   {m.history && m.history.length > 0 && (
@@ -820,9 +755,9 @@ export default function Admin() {
             );
           })}
           {filteredMachines.length === 0 && (
-              <div className="col-span-full p-8 text-center text-gray-500 border border-[rgba(255,255,255,0.1)] border-dashed rounded-2xl h-40 flex items-center justify-center font-medium bg-[rgba(255,255,255,0.05)] backdrop-blur-sm">
-                Nenhum registro encontrado. {searchQuery || filterTag || filterStatus ? 'Tente limpar os filtros.' : 'Adicione uma nova OP.'}
-              </div>
+            <div className="col-span-full p-8 text-center text-gray-500 border border-[rgba(255,255,255,0.1)] border-dashed rounded-2xl h-40 flex items-center justify-center font-medium bg-[rgba(255,255,255,0.05)] backdrop-blur-sm">
+              Nenhum registro encontrado. {searchQuery || filterTag || filterStatus ? 'Tente limpar os filtros.' : 'Adicione uma nova OP.'}
+            </div>
           )}
         </div>
       </main>
