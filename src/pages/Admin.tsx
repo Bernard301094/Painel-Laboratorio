@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -184,6 +184,7 @@ export default function Admin() {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
 
@@ -303,6 +304,7 @@ export default function Admin() {
           body: JSON.stringify({
             _subject: `OP_APP | ${machineData.id} | ${machineData.op}`,
             _template: "table",
+            DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE ACABADO']||''}|FIM`,
             Acao: (editingId || oldMachine) ? 'EDITAR' : 'CRIAR',
             Reator: machineData.id,
             Produto: machineData.product,
@@ -337,11 +339,27 @@ export default function Admin() {
     setShowAdd(false); // we edit inline now
   };
 
-  const handleQuickUpdate = async (m: any, fieldField: 'status' | 'tag', newValue: string) => {
+  const handleQuickUpdate = async (m: any, fieldField: 'status' | 'tag' | 'time', newValue: string) => {
     try {
+      const timeInputEl = document.getElementById(`quick-time-${m.firebaseId}`) as HTMLInputElement;
+      const inputTimeValue = timeInputEl ? timeInputEl.value : m.time;
+
+      if (fieldField === 'status' || fieldField === 'tag') {
+        if (m[fieldField] !== newValue) {
+          if (!inputTimeValue || inputTimeValue === m.time) {
+            setToastMessage("Atenção: É obrigatório modificar o horário. Por favor, atualize o horário no campo ao lado antes de registrar o novo status ou amostra.");
+            setTimeout(() => setToastMessage(null), 5000);
+            return;
+          }
+        } else {
+          return; // Nenhuma mudança
+        }
+      }
+
       const ref = doc(db, 'machines', m.firebaseId);
       let history = m.history || [];
-      if (m[fieldField] !== newValue) {
+      
+      if (fieldField !== 'time') {
         history = [...history, {
           status: m.status,
           tag: m.tag,
@@ -353,8 +371,8 @@ export default function Admin() {
       const updatedMachineData = {
         ...m,
         history,
-        [fieldField]: newValue,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        ...(fieldField !== 'time' ? { [fieldField]: newValue } : {}),
+        time: fieldField === 'time' ? newValue : inputTimeValue,
         updatedAt: serverTimestamp()
       };
       
@@ -405,6 +423,7 @@ export default function Admin() {
           body: JSON.stringify({
             _subject: `OP_APP | ${updatedMachineData.id} | ${updatedMachineData.op}`,
             _template: "table",
+            DADOS_SISTEMA: `PARSE_DATA|${updatedMachineData.id}|${updatedMachineData.product}|${updatedMachineData.op}|${updatedMachineData.tag}|${updatedMachineData.status}|${updatedMachineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE ACABADO']||''}|FIM`,
             Acao: 'EDITAR',
             Reator: updatedMachineData.id,
             Produto: updatedMachineData.product,
@@ -458,6 +477,25 @@ export default function Admin() {
     <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-[rgba(16,185,129,0.3)] selection:text-emerald-200">
       <div className="ambient-glow"></div>
       
+      {/* Toast Notification Modal */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-[100] animate-in fade-in slide-in-from-top-5 duration-300">
+          <div className="glass-card bg-[#141414] p-4 rounded-xl border border-[rgba(245,158,11,0.3)] shadow-[0_0_30px_rgba(245,158,11,0.15)] flex items-start gap-4 max-w-sm">
+            <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-amber-500 mb-1 text-sm">Ação Necessária</h4>
+              <p className="text-gray-300 text-xs leading-relaxed">{toastMessage}</p>
+            </div>
+            <button 
+              onClick={() => setToastMessage(null)}
+              className="text-gray-500 hover:text-gray-300 transition-colors shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(0,0,0,0.6)] backdrop-blur-sm px-4">
@@ -677,8 +715,15 @@ export default function Admin() {
                 <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-2 z-10 shrink-0">
                   <div className="flex justify-between items-center w-full">
                     <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
-                      <Clock className="w-3.5 h-3.5" />
-                      {m.time}
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <input 
+                        id={`quick-time-${m.firebaseId}`}
+                        key={m.time}
+                        type="time" 
+                        defaultValue={m.time || ''} 
+                        className={`bg-transparent outline-none w-[70px] hover:bg-[rgba(255,255,255,0.1)] focus:bg-[rgba(255,255,255,0.1)] focus:ring-1 focus:ring-emerald-500 rounded px-1 transition-all cursor-pointer border border-transparent hover:border-[rgba(255,255,255,0.2)] ${isRed ? 'text-red-400' : 'text-gray-300'}`}
+                        title="Modifique o horário aqui ANTES de selecionar a amostra ou status."
+                      />
                     </span>
                     <div className="flex items-center gap-2">
                       <CardSelect 
