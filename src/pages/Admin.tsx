@@ -211,7 +211,7 @@ async function sendFormEmail(machineData: any, acao: string, allTimes: Record<st
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({
-      _subject: `OP_APP | ${machineData.id} | ${machineData.op}`,
+      _subject: `OP_APP | ${machineData.id} | ${machineData.op} | ${machineData.status} | ${Date.now()}`,
       _template: 'table',
       DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|FIM`,
       Acao: acao,
