@@ -349,13 +349,19 @@ export default function Admin() {
     if (!formData.id.trim()) return;
 
     try {
-      const reatorFormattedId = formData.id.trim().replace(/\s+/g, '-').toUpperCase();
-      const dbDocId = reatorFormattedId;
+      const normalize = (str: string) => (str || '').trim().replace(/[-\s_]+/g, '').toUpperCase();
+      const inputNorm = normalize(formData.id);
+
+      const machineByEditId = editingId ? machines.find(m => m.firebaseId === editingId) : undefined;
+      const duplicates = machines.filter(m => 
+        m.firebaseId !== editingId && 
+        (normalize(m.id) === inputNorm || normalize(m.firebaseId) === inputNorm)
+      );
+
+      const oldMachine = editingId ? machineByEditId : (duplicates.length > 0 ? duplicates[0] : undefined);
+
+      const dbDocId = inputNorm;
       const ref = doc(db, 'machines', dbDocId);
-      
-      const oldMachine = editingId
-        ? machines.find(m => m.firebaseId === editingId)
-        : machines.find(m => m.firebaseId === reatorFormattedId || m.id.toUpperCase() === formData.id.trim().toUpperCase());
       
       // Detectar si la OP cambió → limpiar historial y notificar RESETAR
       const opChanged = oldMachine && oldMachine.op !== formData.op;
@@ -382,13 +388,21 @@ export default function Admin() {
         status: formData.status || 'LIBERADO',
         time: formData.time || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         history,
-        order: editingId && oldMachine?.order !== undefined ? oldMachine.order : machines.length,
+        order: oldMachine?.order !== undefined ? oldMachine.order : machines.length,
         updatedAt: serverTimestamp()
       };
 
       if (editingId && editingId !== dbDocId) {
         await deleteDoc(doc(db, 'machines', editingId));
       }
+
+      // Limpiar duplicados de base de datos para garantizar 1 solo documento por reactor
+      for (const dup of duplicates) {
+        if (dup.firebaseId !== dbDocId && dup.firebaseId !== editingId) {
+          await deleteDoc(doc(db, 'machines', dup.firebaseId));
+        }
+      }
+
       await setDoc(ref, machineData);
 
       const allTimes = buildAllTimes(machineData.history, machineData.tag, machineData.status, machineData.time);
