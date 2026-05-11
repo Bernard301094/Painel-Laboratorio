@@ -3,6 +3,7 @@ import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, updateD
 import { db } from '../firebase';
 import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { syncToSharePoint } from '../graphService';
 
 function ComboInput({ value, options, onChange, placeholder, classNameInput }: { value: string, options: string[], onChange: (v: string) => void, placeholder: string, classNameInput: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -270,8 +271,8 @@ export default function Admin() {
   const [filterTag, setFilterTag] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
-  const uniqueTags = Array.from(new Set(machines.map(m => m.tag?.toUpperCase() || ''))).filter(Boolean);
-  const uniqueStatuses = Array.from(new Set(machines.map(m => m.status?.toUpperCase() || ''))).filter(Boolean);
+  const uniqueTags = Array.from(new Set(machines.map(m => m.tag?.toUpperCase() || ''))).filter((s): s is string => !!s);
+  const uniqueStatuses = Array.from(new Set(machines.map(m => m.status?.toUpperCase() || ''))).filter((s): s is string => !!s);
 
   const defaultTags = ['MANIPULADO', 'ACABADO'];
   const defaultStatuses = ['LIBERADO', 'EM AJUSTE', 'AGUARDANDO', 'EM ANÁLISE'];
@@ -282,7 +283,7 @@ export default function Admin() {
 
   const allTags = Array.from(new Set([...defaultTags, ...uniqueTags]));
   const allStatuses = Array.from(new Set([...defaultStatuses, ...uniqueStatuses]));
-  const uniqueReatores = Array.from(new Set(machines.map(m => m.id?.toUpperCase() || ''))).filter(Boolean);
+  const uniqueReatores = Array.from(new Set(machines.map(m => m.id?.toUpperCase() || ''))).filter((s): s is string => !!s);
   const allReatores = Array.from(new Set([...defaultReatores, ...uniqueReatores]));
 
   useEffect(() => {
@@ -334,7 +335,7 @@ export default function Admin() {
       setTestStep('⚗️ Passo 1/5 — Criando OP de teste...');
       const step1Data = { id: TEST_ID, product: 'PRODUTO TESTE', op: '99999', tag: 'MANIPULADO', status: 'EM ANÁLISE', time: getTime(), history: [], order: 9999, updatedAt: serverTimestamp() };
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step1Data);
-      await sendFormEmail(step1Data, 'CRIAR', buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time));
+      await syncToSharePoint(step1Data, 'CRIAR', buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time));
 
       await delay(INTERVAL);
       setTestStep('🔧 Passo 2/5 — Mudando para EM AJUSTE...');
@@ -344,7 +345,7 @@ export default function Admin() {
       const step2Data = { ...prev2, status: 'EM AJUSTE', time: getTime(), history: history2, updatedAt: serverTimestamp() };
       delete step2Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step2Data);
-      await sendFormEmail(step2Data, 'EDITAR', buildAllTimes(history2, step2Data.tag, step2Data.status, step2Data.time));
+      await syncToSharePoint(step2Data, 'EDITAR', buildAllTimes(history2, step2Data.tag, step2Data.status, step2Data.time));
 
       await delay(INTERVAL);
       setTestStep('⏳ Passo 3/5 — Mudando para AGUARDANDO...');
@@ -354,7 +355,7 @@ export default function Admin() {
       const step3Data = { ...prev3, status: 'AGUARDANDO', time: getTime(), history: history3, updatedAt: serverTimestamp() };
       delete step3Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step3Data);
-      await sendFormEmail(step3Data, 'EDITAR', buildAllTimes(history3, step3Data.tag, step3Data.status, step3Data.time));
+      await syncToSharePoint(step3Data, 'EDITAR', buildAllTimes(history3, step3Data.tag, step3Data.status, step3Data.time));
 
       await delay(INTERVAL);
       setTestStep('🔬 Passo 4/5 — Mudando para ACABADO + EM ANÁLISE...');
@@ -364,7 +365,7 @@ export default function Admin() {
       const step4Data = { ...prev4, tag: 'ACABADO', status: 'EM ANÁLISE', time: getTime(), history: history4, updatedAt: serverTimestamp() };
       delete step4Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step4Data);
-      await sendFormEmail(step4Data, 'EDITAR', buildAllTimes(history4, step4Data.tag, step4Data.status, step4Data.time));
+      await syncToSharePoint(step4Data, 'EDITAR', buildAllTimes(history4, step4Data.tag, step4Data.status, step4Data.time));
 
       await delay(INTERVAL);
       setTestStep('✅ Passo 5/5 — Mudando para LIBERADO...');
@@ -374,7 +375,7 @@ export default function Admin() {
       const step5Data = { ...prev5, status: 'LIBERADO', time: getTime(), history: history5, updatedAt: serverTimestamp() };
       delete step5Data.firebaseId;
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step5Data);
-      await sendFormEmail(step5Data, 'EDITAR', buildAllTimes(history5, step5Data.tag, step5Data.status, step5Data.time));
+      await syncToSharePoint(step5Data, 'EDITAR', buildAllTimes(history5, step5Data.tag, step5Data.status, step5Data.time));
 
       await delay(INTERVAL);
       setTestStep('🗑️ Limpando OP de teste...');
@@ -455,12 +456,11 @@ export default function Admin() {
       const allTimes = buildAllTimes(machineData.history, machineData.tag, machineData.status, machineData.time);
 
       try {
-        // Se a OP mudou → envia RESETAR primeiro para o Power Automate apagar os itens antigos do SharePoint
         if (opChanged) {
-          await sendFormEmail({ ...machineData, op: oldMachine.op }, 'RESETAR', {});
+          await syncToSharePoint({ ...machineData, op: oldMachine.op }, 'RESETAR', {});
         }
         const acao = opChanged ? 'CRIAR' : (editingId || oldMachine) ? 'EDITAR' : 'CRIAR';
-        await sendFormEmail(machineData, acao, allTimes);
+        await syncToSharePoint(machineData, acao, allTimes);
       } catch (emailError) {
         console.error('Error sending to email: ', emailError);
       }
@@ -524,7 +524,7 @@ export default function Admin() {
       const allTimes = buildAllTimes(updatedMachineData.history, updatedMachineData.tag, updatedMachineData.status, updatedMachineData.time);
 
       try {
-        await sendFormEmail(updatedMachineData, 'EDITAR', allTimes);
+        await syncToSharePoint(updatedMachineData, 'EDITAR', allTimes);
       } catch (emailError) {
         console.error('Error sending email: ', emailError);
       }
