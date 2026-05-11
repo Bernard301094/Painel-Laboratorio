@@ -25,24 +25,35 @@ async function ensureInitialized(): Promise<void> {
 
 const SCOPES = ['https://graph.microsoft.com/Sites.ReadWrite.All'];
 
+export async function connectToSharePoint(): Promise<void> {
+  await ensureInitialized();
+
+  const result = await msalInstance.loginPopup({ scopes: SCOPES });
+  if (result.account) {
+    msalInstance.setActiveAccount(result.account);
+  }
+}
+
 export async function getGraphToken(): Promise<string> {
   await ensureInitialized();
 
+  const activeAccount = msalInstance.getActiveAccount();
   const accounts = msalInstance.getAllAccounts();
+  const account = activeAccount || accounts[0];
 
-  if (accounts.length === 0) {
-    throw new Error('Microsoft Graph sem sessão ativa. Configure VITE_SHAREPOINT_WEBHOOK_URL para sincronizar com SharePoint sem popup.');
+  if (!account) {
+    throw new Error('SharePoint não conectado. Clique em Conectar SharePoint uma vez antes de criar ou editar OPs.');
   }
 
   try {
     const result = await msalInstance.acquireTokenSilent({
       scopes: SCOPES,
-      account: accounts[0],
+      account,
     });
     return result.accessToken;
   } catch (err) {
     if (err instanceof InteractionRequiredAuthError) {
-      throw new Error('Microsoft Graph requer autenticação interativa, mas popups foram desativados para não interromper a criação de OP. Configure VITE_SHAREPOINT_WEBHOOK_URL.');
+      throw new Error('Sessão do SharePoint expirada ou sem consentimento. Clique em Conectar SharePoint novamente; a criação de OP não abre popup automaticamente.');
     }
     throw err;
   }

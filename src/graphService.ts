@@ -2,8 +2,6 @@ import { getGraphToken } from './graphClient';
 
 const SITE_ID = import.meta.env.VITE_GRAPH_SITE_ID as string;
 const LIST_ID = import.meta.env.VITE_GRAPH_LIST_ID as string;
-const SHAREPOINT_WEBHOOK_URL = import.meta.env.VITE_SHAREPOINT_WEBHOOK_URL as string | undefined;
-
 const BASE = `https://graph.microsoft.com/v1.0/sites/${SITE_ID}:/lists/${LIST_ID}`;
 
 // ⚠️ Nomes internos (StaticName) das colunas no SharePoint.
@@ -55,40 +53,6 @@ function buildFields(m: any, times: Record<string, string>) {
   };
 }
 
-
-async function postToSharePointWebhook(
-  machineData: any,
-  acao: 'CRIAR' | 'EDITAR' | 'RESETAR',
-  allTimes: Record<string, string>,
-): Promise<boolean> {
-  if (!SHAREPOINT_WEBHOOK_URL) return false;
-
-  const fields = buildFields(machineData, allTimes);
-  const res = await fetch(SHAREPOINT_WEBHOOK_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      acao,
-      action: acao,
-      reator: machineData.id,
-      produto: machineData.product || '',
-      op: machineData.op || '',
-      amostra: machineData.tag || '',
-      status: machineData.status || '',
-      horario: machineData.time || '',
-      horarios: allTimes,
-      fields,
-      machine: machineData,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`SharePoint webhook ${res.status}: ${body}`);
-  }
-
-  return true;
-}
 
 async function findItemId(reatorId: string, op: string): Promise<string | null> {
   const filter = `fields/${F.reator} eq '${reatorId}' and fields/${F.op} eq '${op}'`;

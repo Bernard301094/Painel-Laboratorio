@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { syncToSharePoint } from '../graphService';
+import { connectToSharePoint } from '../graphClient';
 
 function ComboInput({ value, options, onChange, placeholder, classNameInput }: { value: string, options: string[], onChange: (v: string) => void, placeholder: string, classNameInput: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -205,32 +206,6 @@ function buildAllTimes(history: any[], tag: string, status: string, time: string
   return allTimes;
 }
 
-// ─── Helper: send email via FormSubmit ─────────────────────────────────────────
-async function sendFormEmail(machineData: any, acao: string, allTimes: Record<string, string>) {
-  const destEmail = 'bernard.castillo@tractgroup.com.br';
-  await fetch(`https://formsubmit.co/ajax/${destEmail}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      _subject: `OP_APP | ${machineData.id} | ${machineData.op} | ${machineData.status} | ${Date.now()}`,
-      _template: 'table',
-      DADOS_SISTEMA: `PARSE_DATA|${machineData.id}|${machineData.product}|${machineData.op}|${machineData.tag}|${machineData.status}|${machineData.time}|${allTimes['HORARIO MANIPULADO']||''}|${allTimes['HORARIO ACABADO']||''}|${allTimes['HORARIO ANALISE ACABADO']||''}|${allTimes['HORARIO ANALISE MANIPULADO']||''}|${allTimes['HORARIO AJUSTE MANIPULADO']||''}|FIM`,
-      Acao: acao,
-      Reator: machineData.id,
-      Produto: machineData.product,
-      OP: machineData.op,
-      Amostra: machineData.tag,
-      Status: machineData.status,
-      Horario: machineData.time,
-      'HORARIO MANIPULADO': allTimes['HORARIO MANIPULADO'] || '',
-      'HORARIO ACABADO': allTimes['HORARIO ACABADO'] || '',
-      'HORARIO ANALISE ACABADO': allTimes['HORARIO ANALISE ACABADO'] || '',
-      'HORARIO ANALISE MANIPULADO': allTimes['HORARIO ANALISE MANIPULADO'] || '',
-      'HORARIO AJUSTE MANIPULADO': allTimes['HORARIO AJUSTE MANIPULADO'] || '',
-    }),
-  });
-}
-
 function timeAgo(timestamp: any): string {
   if (!timestamp) return '';
   const ts = timestamp?.toDate ? timestamp.toDate().getTime() : typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
@@ -264,6 +239,7 @@ export default function Admin() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [testRunning, setTestRunning] = useState(false);
   const [testStep, setTestStep] = useState<string | null>(null);
+  const [sharePointConnecting, setSharePointConnecting] = useState(false);
   
   const [formData, setFormData] = useState({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
 
@@ -461,8 +437,10 @@ export default function Admin() {
         }
         const acao = opChanged ? 'CRIAR' : (editingId || oldMachine) ? 'EDITAR' : 'CRIAR';
         await syncToSharePoint(machineData, acao, allTimes);
-      } catch (emailError) {
-        console.error('Error sending to email: ', emailError);
+      } catch (sharePointError) {
+        console.error('Error syncing to SharePoint: ', sharePointError);
+        setToastMessage(String(sharePointError instanceof Error ? sharePointError.message : sharePointError));
+        setTimeout(() => setToastMessage(null), 7000);
       }
 
       setFormData({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
@@ -525,8 +503,10 @@ export default function Admin() {
 
       try {
         await syncToSharePoint(updatedMachineData, 'EDITAR', allTimes);
-      } catch (emailError) {
-        console.error('Error sending email: ', emailError);
+      } catch (sharePointError) {
+        console.error('Error syncing to SharePoint: ', sharePointError);
+        setToastMessage(String(sharePointError instanceof Error ? sharePointError.message : sharePointError));
+        setTimeout(() => setToastMessage(null), 7000);
       }
     } catch (error) {
        console.error('Error quick update: ', error);
@@ -542,6 +522,21 @@ export default function Admin() {
       } catch (error) {
          console.error('Error deleting doc: ', error);
       }
+    }
+  };
+
+  const handleConnectSharePoint = async () => {
+    try {
+      setSharePointConnecting(true);
+      await connectToSharePoint();
+      setToastMessage('SharePoint conectado. As próximas OPs serão enviadas diretamente para a lista via Microsoft Graph.');
+      setTimeout(() => setToastMessage(null), 5000);
+    } catch (error) {
+      console.error('Error connecting SharePoint: ', error);
+      setToastMessage('Não foi possível conectar ao SharePoint. Verifique o login e as permissões do Microsoft Graph no Azure.');
+      setTimeout(() => setToastMessage(null), 7000);
+    } finally {
+      setSharePointConnecting(false);
     }
   };
 
@@ -632,6 +627,20 @@ export default function Admin() {
               {testRunning ? 'Testando...' : 'Teste Auto'}
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleConnectSharePoint}
+            disabled={sharePointConnecting}
+            title="Conectar ao SharePoint via Microsoft Graph"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold uppercase text-[10px] transition-all border ${
+              sharePointConnecting
+                ? 'bg-sky-900 border-sky-700 text-sky-400 cursor-not-allowed opacity-60'
+                : 'bg-[rgba(14,165,233,0.1)] border-[rgba(14,165,233,0.3)] text-sky-400 hover:bg-[rgba(14,165,233,0.2)] hover:border-sky-500'
+            }`}
+          >
+            <Server className="w-4 h-4" />
+            {sharePointConnecting ? 'Conectando...' : 'Conectar SharePoint'}
+          </button>
           <Link to="/" className="text-gray-400 hover:text-white font-medium transition-colors text-sm px-4">Ir para TV</Link>
           <button 
              onClick={() => {
