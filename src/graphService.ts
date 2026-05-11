@@ -66,6 +66,9 @@ export async function syncToSharePoint(
   acao: 'CRIAR' | 'EDITAR' | 'RESETAR',
   allTimes: Record<string, string>,
 ): Promise<void> {
+  const sentByWebhook = await postToSharePointWebhook(machineData, acao, allTimes);
+  if (sentByWebhook) return;
+
   switch (acao) {
     case 'CRIAR': {
       const fields = buildFields(machineData, allTimes);
