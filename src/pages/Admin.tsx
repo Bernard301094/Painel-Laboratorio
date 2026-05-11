@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical, RotateCcw } from 'lucide-react';
+import { Trash2, Edit2, Plus, X, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical, RotateCcw, Link2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { syncToSharePoint } from '../graphService';
-import { connectToSharePoint } from '../graphClient';
 
 function ComboInput({ value, options, onChange, placeholder, classNameInput }: { value: string, options: string[], onChange: (v: string) => void, placeholder: string, classNameInput: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -206,6 +205,7 @@ function buildAllTimes(history: any[], tag: string, status: string, time: string
   return allTimes;
 }
 
+
 function timeAgo(timestamp: any): string {
   if (!timestamp) return '';
   const ts = timestamp?.toDate ? timestamp.toDate().getTime() : typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
@@ -239,7 +239,6 @@ export default function Admin() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [testRunning, setTestRunning] = useState(false);
   const [testStep, setTestStep] = useState<string | null>(null);
-  const [sharePointConnecting, setSharePointConnecting] = useState(false);
   
   const [formData, setFormData] = useState({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
 
@@ -311,7 +310,11 @@ export default function Admin() {
       setTestStep('⚗️ Passo 1/5 — Criando OP de teste...');
       const step1Data = { id: TEST_ID, product: 'PRODUTO TESTE', op: '99999', tag: 'MANIPULADO', status: 'EM ANÁLISE', time: getTime(), history: [], order: 9999, updatedAt: serverTimestamp() };
       await setDoc(doc(db, 'machines', TEST_DOC_ID), step1Data);
-      await syncToSharePoint(step1Data, 'CRIAR', buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time));
+      try {
+        await syncToSharePoint(step1Data, 'CRIAR', buildAllTimes([], step1Data.tag, step1Data.status, step1Data.time));
+      } catch (err: any) {
+        throw new Error(`SharePoint Sync failed: ${err.message || err}`);
+      }
 
       await delay(INTERVAL);
       setTestStep('🔧 Passo 2/5 — Mudando para EM AJUSTE...');
@@ -437,10 +440,9 @@ export default function Admin() {
         }
         const acao = opChanged ? 'CRIAR' : (editingId || oldMachine) ? 'EDITAR' : 'CRIAR';
         await syncToSharePoint(machineData, acao, allTimes);
-      } catch (sharePointError) {
-        console.error('Error syncing to SharePoint: ', sharePointError);
-        setToastMessage(String(sharePointError instanceof Error ? sharePointError.message : sharePointError));
-        setTimeout(() => setToastMessage(null), 7000);
+      } catch (graphError: any) {
+        console.error('Error syncing to SharePoint: ', graphError);
+        setToastMessage(`Erro ao sincronizar com SharePoint: ${graphError.message || graphError}`);
       }
 
       setFormData({ id: '', product: '', op: '', tag: 'MANIPULADO', status: 'LIBERADO', time: '' });
@@ -503,10 +505,9 @@ export default function Admin() {
 
       try {
         await syncToSharePoint(updatedMachineData, 'EDITAR', allTimes);
-      } catch (sharePointError) {
-        console.error('Error syncing to SharePoint: ', sharePointError);
-        setToastMessage(String(sharePointError instanceof Error ? sharePointError.message : sharePointError));
-        setTimeout(() => setToastMessage(null), 7000);
+      } catch (graphError: any) {
+        console.error('Error syncing to SharePoint: ', graphError);
+        setToastMessage(`Erro ao sincronizar com SharePoint: ${graphError.message || graphError}`);
       }
     } catch (error) {
        console.error('Error quick update: ', error);
@@ -522,21 +523,6 @@ export default function Admin() {
       } catch (error) {
          console.error('Error deleting doc: ', error);
       }
-    }
-  };
-
-  const handleConnectSharePoint = async () => {
-    try {
-      setSharePointConnecting(true);
-      await connectToSharePoint();
-      setToastMessage('SharePoint conectado. As próximas OPs serão enviadas diretamente para a lista via Microsoft Graph.');
-      setTimeout(() => setToastMessage(null), 5000);
-    } catch (error) {
-      console.error('Error connecting SharePoint: ', error);
-      setToastMessage('Não foi possível conectar ao SharePoint. Verifique o login e as permissões do Microsoft Graph no Azure.');
-      setTimeout(() => setToastMessage(null), 7000);
-    } finally {
-      setSharePointConnecting(false);
     }
   };
 
@@ -627,20 +613,6 @@ export default function Admin() {
               {testRunning ? 'Testando...' : 'Teste Auto'}
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleConnectSharePoint}
-            disabled={sharePointConnecting}
-            title="Conectar ao SharePoint via Microsoft Graph"
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold uppercase text-[10px] transition-all border ${
-              sharePointConnecting
-                ? 'bg-sky-900 border-sky-700 text-sky-400 cursor-not-allowed opacity-60'
-                : 'bg-[rgba(14,165,233,0.1)] border-[rgba(14,165,233,0.3)] text-sky-400 hover:bg-[rgba(14,165,233,0.2)] hover:border-sky-500'
-            }`}
-          >
-            <Server className="w-4 h-4" />
-            {sharePointConnecting ? 'Conectando...' : 'Conectar SharePoint'}
-          </button>
           <Link to="/" className="text-gray-400 hover:text-white font-medium transition-colors text-sm px-4">Ir para TV</Link>
           <button 
              onClick={() => {

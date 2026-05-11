@@ -39,7 +39,7 @@ O sistema é composto por duas telas principais:
 - [Firebase Firestore](https://firebase.google.com/docs/firestore) (banco de dados em tempo real)
 - [React Router v7](https://reactrouter.com/)
 - [Lucide React](https://lucide.dev/) (ícones)
-- [Microsoft Graph](https://learn.microsoft.com/graph/) (integração direta com SharePoint/Microsoft Lists)
+- [FormSubmit](https://formsubmit.co/) (envio de notificações por e-mail)
 
 ---
 
@@ -67,11 +67,7 @@ O sistema é composto por duas telas principais:
    ```bash
    cp .env.example .env
    ```
-<<<<<<< codex/fix-popup-behavior-on-criar-nova-op-zexdyg
-   Preencha as credenciais do Firebase e do Microsoft Graph no arquivo `.env` (veja a seção abaixo).
-=======
-   Preencha as credenciais do Firebase e, se desejar sincronizar OPs com SharePoint sem popups, configure também `VITE_SHAREPOINT_WEBHOOK_URL` no arquivo `.env` (veja a seção abaixo).
->>>>>>> main
+   Preencha as credenciais do Firebase no arquivo `.env` (veja a seção abaixo).
 
 4. Inicie o servidor de desenvolvimento:
    ```bash
@@ -90,23 +86,7 @@ VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
-
-<<<<<<< codex/fix-popup-behavior-on-criar-nova-op-zexdyg
-# Microsoft Graph API — integração direta com SharePoint/Microsoft Lists
-VITE_GRAPH_LIST_ID=...
-VITE_GRAPH_SITE_ID=...
-VITE_GRAPH_TENANT_ID=...
-VITE_GRAPH_CLIENT_ID=...
 ```
-
-No Azure, o aplicativo precisa ter permissões delegadas `Sites.ReadWrite.All` e `User.Read` concedidas. No painel administrativo, clique em **Conectar SharePoint** uma vez para iniciar a sessão Microsoft; depois disso, a criação e edição de OPs usa token silencioso e não abre popup automaticamente no botão **Criar Nova OP**.
-=======
-# Recomendado para enviar as OPs para SharePoint/Microsoft Lists sem abrir popup no navegador.
-VITE_SHAREPOINT_WEBHOOK_URL=https://...
-```
-
-A URL de webhook deve ser um gatilho HTTP do Power Automate. Ao criar, editar ou resetar uma OP, o app envia um `POST` com a ação (`CRIAR`, `EDITAR` ou `RESETAR`), os dados da OP e os campos já formatados para a lista do SharePoint.
->>>>>>> main
 
 ---
 
@@ -124,11 +104,7 @@ A URL de webhook deve ser um gatilho HTTP do Power Automate. Ao criar, editar ou
 ## 🔄 Integrações
 
 - **Firebase Firestore:** Dados sincronizados em tempo real. A coleção `machines` armazena todas as OPs ativas, ordenadas por `updatedAt`.
-<<<<<<< codex/fix-popup-behavior-on-criar-nova-op-zexdyg
-- **Microsoft Graph / SharePoint:** Ao criar, editar ou resetar uma OP, o sistema grava diretamente na lista do SharePoint/Microsoft Lists usando as credenciais Azure configuradas em `VITE_GRAPH_*`. A autenticação interativa fica restrita ao botão **Conectar SharePoint**; o botão **Criar Nova OP** não abre popup automaticamente.
-=======
-- **Power Automate / SharePoint:** Ao criar, editar ou resetar uma OP, o sistema envia os dados por `POST` para `VITE_SHAREPOINT_WEBHOOK_URL`, permitindo que um fluxo do Power Automate grave diretamente na lista do SharePoint sem abrir popup de autenticação.
->>>>>>> main
+- **FormSubmit / Power Automate:** Ao criar, editar ou excluir uma OP, o sistema envia uma notificação por e-mail que pode ser processada por um fluxo do Microsoft Power Automate para atualizar listas no SharePoint.
 - **Histórico de status:** Cada alteração de status ou amostra é registrada no campo `history` do documento, permitindo rastrear o ciclo completo da OP.
 
 ---
