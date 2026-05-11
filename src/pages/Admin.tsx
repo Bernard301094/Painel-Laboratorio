@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical } from 'lucide-react';
+import { Trash2, Edit2, Plus, X, Server, CheckCircle, AlertTriangle, Hourglass, Clock, AlertCircle, ChevronDown, Search, Filter, FlaskConical, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 function ComboInput({ value, options, onChange, placeholder, classNameInput }: { value: string, options: string[], onChange: (v: string) => void, placeholder: string, classNameInput: string }) {
@@ -230,8 +230,33 @@ async function sendFormEmail(machineData: any, acao: string, allTimes: Record<st
   });
 }
 
+function timeAgo(timestamp: any): string {
+  if (!timestamp) return '';
+  const ts = timestamp?.toDate ? timestamp.toDate().getTime() : typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return 'agora';
+  if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
+  return `há ${Math.floor(diff / 86400)}d`;
+}
+
+function isStale(timestamp: any, hours = 4): boolean {
+  if (!timestamp) return false;
+  const ts = timestamp?.toDate ? timestamp.toDate().getTime() : typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
+  return Date.now() - ts > hours * 3600 * 1000;
+}
+
+const STATUS_PRIORITY: Record<string, number> = {
+  'EM AJUSTE': 0,
+  'AGUARDANDO': 1,
+  'EM ANÁLISE': 2,
+  'LIBERADO': 3,
+};
+
 export default function Admin() {
   const [machines, setMachines] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [historyModalId, setHistoryModalId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -265,6 +290,7 @@ export default function Admin() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
       setMachines(ms);
+      setLoading(false);
     }, (error) => {
       console.error('Error fetching machines:', error);
     });
@@ -498,13 +524,6 @@ export default function Admin() {
     }
   };
 
-  const STATUS_PRIORITY: Record<string, number> = {
-    'EM AJUSTE': 0,
-    'AGUARDANDO': 1,
-    'EM ANÁLISE': 2,
-    'LIBERADO': 3,
-  };
-
   const filteredMachines = machines
     .filter(m => {
       const searchLower = searchQuery.toLowerCase();
@@ -662,6 +681,26 @@ export default function Admin() {
           </div>
         </div>
 
+        {machines.length > 0 && !loading && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {[
+              { label: 'EM AJUSTE',  count: machines.filter(m => m.status?.toUpperCase() === 'EM AJUSTE').length,  colorText: 'text-red-400',     colorBg: 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.25)]'   },
+              { label: 'AGUARDANDO', count: machines.filter(m => m.status?.toUpperCase() === 'AGUARDANDO').length, colorText: 'text-amber-400',   colorBg: 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.25)]' },
+              { label: 'EM ANÁLISE', count: machines.filter(m => m.status?.toUpperCase() === 'EM ANÁLISE').length, colorText: 'text-blue-400',    colorBg: 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.25)]' },
+              { label: 'LIBERADO',   count: machines.filter(m => m.status?.toUpperCase() === 'LIBERADO').length,   colorText: 'text-emerald-400', colorBg: 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.25)]' },
+            ].map(({ label, count, colorText, colorBg }) => count > 0 ? (
+              <button
+                key={label}
+                onClick={() => setFilterStatus(filterStatus === label ? '' : label)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black tracking-[0.1em] uppercase transition-all ${colorBg} ${colorText} ${filterStatus === label ? 'ring-1 ring-current' : 'opacity-70 hover:opacity-100'}`}
+              >
+                <span className="text-sm font-black leading-none">{count}</span>
+                {label}
+              </button>
+            ) : null)}
+            <span className="text-[10px] text-gray-600 ml-auto shrink-0">{machines.length} reatores</span>
+          </div>
+        )}
         <div className="overflow-x-auto rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#0d0d11] shadow-lg">
           <table className="w-full border-collapse">
             <thead>
@@ -677,7 +716,19 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {filteredMachines.map((m) => {
+              {loading && Array.from({ length: 6 }).map((_, i) => (
+                <tr key={'skel-' + i} className="border-b border-[rgba(255,255,255,0.04)] animate-pulse">
+                  <td className="p-0" style={{ width: '3px', backgroundColor: 'rgba(255,255,255,0.08)' }}></td>
+                  <td className="px-4 py-4"><div className="h-5 w-12 rounded bg-[rgba(255,255,255,0.05)]"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 w-36 rounded bg-[rgba(255,255,255,0.05)]"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-[rgba(255,255,255,0.05)]"></div></td>
+                  <td className="px-4 py-4"><div className="h-6 w-24 rounded bg-[rgba(255,255,255,0.05)]"></div></td>
+                  <td className="px-4 py-4"><div className="h-6 w-28 rounded bg-[rgba(255,255,255,0.05)]"></div></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-[rgba(255,255,255,0.05)]"></div></td>
+                  <td className="px-4 py-4"></td>
+                </tr>
+              ))}
+              {!loading && filteredMachines.map((m) => {
                 if(editingId === m.firebaseId) {
                   return (
                     <tr key={'edit-'+m.firebaseId} className="border-b border-[rgba(16,185,129,0.25)] bg-[rgba(16,185,129,0.04)] animate-in fade-in duration-200">
@@ -734,6 +785,7 @@ export default function Admin() {
                     <td className="p-0" style={{ width: '3px', backgroundColor: accentColor }}></td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className={`text-[15px] font-black tracking-tight ${headerText}`}>{m.id}</span>
+                      {m.updatedAt && <span className="text-[9px] text-gray-600 block mt-0.5">{timeAgo(m.updatedAt)}</span>}
                     </td>
                     <td className="px-4 py-3.5 max-w-[220px]">
                       <span className="text-[13px] font-semibold text-gray-200 uppercase block truncate" title={m.product}>{m.product}</span>
@@ -755,7 +807,11 @@ export default function Admin() {
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <Clock className={`w-3.5 h-3.5 shrink-0 ${isRed ? 'text-red-400' : 'text-gray-600'}`} />
+                        {isStale(m.updatedAt) ? (
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-500" title="Sem atualização há mais de 4 horas" />
+                        ) : (
+                          <Clock className={`w-3.5 h-3.5 shrink-0 ${isRed ? 'text-red-400' : 'text-gray-600'}`} />
+                        )}
                         <input
                           id={`quick-time-${m.firebaseId}`}
                           key={m.time}
@@ -768,6 +824,9 @@ export default function Admin() {
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center justify-end gap-1.5 opacity-25 group-hover:opacity-100 transition-opacity duration-200">
+                        <button onClick={() => setHistoryModalId(m.firebaseId)} className="p-1.5 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md hover:bg-[rgba(255,255,255,0.12)] hover:text-white text-gray-400 transition-all" title="Ver histórico">
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
                         <button onClick={() => handleEdit(m)} className="p-1.5 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md hover:bg-[rgba(255,255,255,0.12)] hover:text-white text-gray-400 transition-all">
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -779,7 +838,7 @@ export default function Admin() {
                   </tr>
                 );
               })}
-              {filteredMachines.length === 0 && (
+              {!loading && filteredMachines.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-8 py-16 text-center text-gray-500 font-medium">
                     Nenhum registro encontrado. {searchQuery || filterTag || filterStatus ? 'Tente limpar os filtros.' : 'Adicione uma nova OP.'}
@@ -790,6 +849,59 @@ export default function Admin() {
           </table>
         </div>
       </main>
+
+      {historyModalId && (() => {
+        const hm = machines.find(m => m.firebaseId === historyModalId);
+        if (!hm) return null;
+        const s = hm.status?.toUpperCase();
+        const hmColor = s === 'EM AJUSTE' ? 'text-red-400' : s === 'AGUARDANDO' || (hm.tag?.toUpperCase() === 'MANIPULADO' && s === 'LIBERADO') ? 'text-amber-400' : s === 'EM ANÁLISE' ? 'text-blue-400' : s === 'LIBERADO' ? 'text-emerald-400' : 'text-gray-400';
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setHistoryModalId(null)}>
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+            <div className="relative bg-[#0d0d11] border border-[rgba(255,255,255,0.12)] rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <p className="text-[8px] font-bold tracking-[0.22em] text-gray-600 uppercase mb-0.5">Histórico</p>
+                  <h3 className={`text-2xl font-black ${hmColor}`}>{hm.id}</h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5 uppercase">{hm.product}</p>
+                </div>
+                <button onClick={() => setHistoryModalId(null)} className="p-2 text-gray-500 hover:text-white bg-[rgba(255,255,255,0.05)] rounded-lg transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto hide-scrollbar">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Atual</p>
+                    <p className="text-sm font-semibold text-white">{hm.status} · {hm.tag}</p>
+                  </div>
+                  <span className="text-[11px] font-mono text-gray-400 shrink-0">{hm.time}</span>
+                </div>
+                {[...(hm.history || [])].reverse().map((h: any, i: number) => {
+                  const hs = h.status?.toUpperCase();
+                  const dot = hs === 'EM AJUSTE' ? 'bg-red-400' : hs === 'LIBERADO' ? 'bg-emerald-400' : hs === 'AGUARDANDO' ? 'bg-amber-400' : hs === 'EM ANÁLISE' ? 'bg-blue-400' : 'bg-gray-500';
+                  const col = hs === 'EM AJUSTE' ? 'text-red-400' : hs === 'LIBERADO' ? 'text-emerald-400' : hs === 'AGUARDANDO' ? 'text-amber-400' : hs === 'EM ANÁLISE' ? 'text-blue-400' : 'text-gray-400';
+                  const dateStr = h.timestamp ? new Date(h.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+                  return (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)]">
+                      <div className={`w-2 h-2 rounded-full ${dot} shrink-0 opacity-70`}></div>
+                      <div className="flex-1 min-w-0">
+                        {dateStr && <p className="text-[9px] text-gray-600 mb-0.5">{dateStr}</p>}
+                        <p className={`text-sm font-semibold ${col}`}>{h.status} · {h.tag}</p>
+                      </div>
+                      <span className="text-[11px] font-mono text-gray-500 shrink-0">{h.time}</span>
+                    </div>
+                  );
+                })}
+                {(!hm.history || hm.history.length === 0) && (
+                  <p className="text-center text-gray-600 text-sm py-6">Sem histórico de alterações.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

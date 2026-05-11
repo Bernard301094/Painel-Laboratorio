@@ -151,6 +151,19 @@ export default function Display() {
               ))}
             </div>
           )}
+          <div className="hidden lg:flex items-center gap-4 mr-5">
+            {[
+              { color: 'bg-red-500',     label: 'EM AJUSTE'  },
+              { color: 'bg-amber-500',   label: 'AGUARDANDO' },
+              { color: 'bg-blue-500',    label: 'EM ANÁLISE' },
+              { color: 'bg-emerald-500', label: 'LIBERADO'   },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${color} shrink-0`}></div>
+                <span className="text-[9px] font-bold tracking-wider text-gray-500 uppercase">{label}</span>
+              </div>
+            ))}
+          </div>
           <div className="flex items-center bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-4 py-2 md:py-2.5 rounded-lg shadow-sm mr-4">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)] mr-2"></span>
             <span className="text-[10px] md:text-xs font-bold tracking-wider text-gray-300 uppercase">Atualizado: {currentTime}</span>
