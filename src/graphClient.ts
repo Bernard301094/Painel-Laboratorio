@@ -31,8 +31,7 @@ export async function getGraphToken(): Promise<string> {
   const accounts = msalInstance.getAllAccounts();
 
   if (accounts.length === 0) {
-    const result = await msalInstance.loginPopup({ scopes: SCOPES });
-    return result.accessToken;
+    throw new Error('Microsoft Graph sem sessão ativa. Configure VITE_SHAREPOINT_WEBHOOK_URL para sincronizar com SharePoint sem popup.');
   }
 
   try {
@@ -43,8 +42,7 @@ export async function getGraphToken(): Promise<string> {
     return result.accessToken;
   } catch (err) {
     if (err instanceof InteractionRequiredAuthError) {
-      const result = await msalInstance.acquireTokenPopup({ scopes: SCOPES });
-      return result.accessToken;
+      throw new Error('Microsoft Graph requer autenticação interativa, mas popups foram desativados para não interromper a criação de OP. Configure VITE_SHAREPOINT_WEBHOOK_URL.');
     }
     throw err;
   }

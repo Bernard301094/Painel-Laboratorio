@@ -227,7 +227,7 @@ const formatDate = (ts: any): string => {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 };
 
-const MachineCard = ({ data }: { data: any }) => {
+const MachineCard: React.FC<{ data: any }> = ({ data }) => {
   const isManipuladoLiberado = data.tag?.toUpperCase() === 'MANIPULADO' && data.status?.toUpperCase() === 'LIBERADO';
 
   const isGreen = !isManipuladoLiberado && data.status?.toUpperCase() === 'LIBERADO';
