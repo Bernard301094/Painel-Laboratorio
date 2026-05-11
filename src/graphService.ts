@@ -2,7 +2,6 @@ import { getGraphToken } from './graphClient';
 
 const SITE_ID = import.meta.env.VITE_GRAPH_SITE_ID as string;
 const LIST_ID = import.meta.env.VITE_GRAPH_LIST_ID as string;
-
 const BASE = `https://graph.microsoft.com/v1.0/sites/${SITE_ID}:/lists/${LIST_ID}`;
 
 // ⚠️ Nomes internos (StaticName) das colunas no SharePoint.
@@ -53,6 +52,7 @@ function buildFields(m: any, times: Record<string, string>) {
     [F.horarioAjusteManipulado]:  times['HORARIO AJUSTE MANIPULADO']  || '',
   };
 }
+
 
 async function findItemId(reatorId: string, op: string): Promise<string | null> {
   const filter = `fields/${F.reator} eq '${reatorId}' and fields/${F.op} eq '${op}'`;
