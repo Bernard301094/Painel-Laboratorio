@@ -67,7 +67,7 @@ O sistema é composto por duas telas principais:
    ```bash
    cp .env.example .env
    ```
-   Preencha as credenciais do Firebase no arquivo `.env` (veja a seção abaixo).
+   Preencha as credenciais do Firebase e, se desejar sincronizar OPs com SharePoint sem popups, configure também `VITE_SHAREPOINT_WEBHOOK_URL` no arquivo `.env` (veja a seção abaixo).
 
 4. Inicie o servidor de desenvolvimento:
    ```bash
@@ -86,7 +86,12 @@ VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
+
+# Recomendado para enviar as OPs para SharePoint/Microsoft Lists sem abrir popup no navegador.
+VITE_SHAREPOINT_WEBHOOK_URL=https://...
 ```
+
+A URL de webhook deve ser um gatilho HTTP do Power Automate. Ao criar, editar ou resetar uma OP, o app envia um `POST` com a ação (`CRIAR`, `EDITAR` ou `RESETAR`), os dados da OP e os campos já formatados para a lista do SharePoint.
 
 ---
 
@@ -104,7 +109,7 @@ VITE_FIREBASE_APP_ID=...
 ## 🔄 Integrações
 
 - **Firebase Firestore:** Dados sincronizados em tempo real. A coleção `machines` armazena todas as OPs ativas, ordenadas por `updatedAt`.
-- **FormSubmit / Power Automate:** Ao criar, editar ou excluir uma OP, o sistema envia uma notificação por e-mail que pode ser processada por um fluxo do Microsoft Power Automate para atualizar listas no SharePoint.
+- **Power Automate / SharePoint:** Ao criar, editar ou resetar uma OP, o sistema envia os dados por `POST` para `VITE_SHAREPOINT_WEBHOOK_URL`, permitindo que um fluxo do Power Automate grave diretamente na lista do SharePoint sem abrir popup de autenticação.
 - **Histórico de status:** Cada alteração de status ou amostra é registrada no campo `history` do documento, permitindo rastrear o ciclo completo da OP.
 
 ---
