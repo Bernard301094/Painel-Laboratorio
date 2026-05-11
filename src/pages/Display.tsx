@@ -105,15 +105,35 @@ export default function Display() {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'machines'), orderBy('updatedAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
-      setMachines(ms);
-    }, (error) => {
-      console.error('Error fetching machines:', error);
-    });
+    let unsubscribeFn: (() => void) | null = null;
 
-    return () => unsubscribe();
+    const subscribe = () => {
+      if (unsubscribeFn) return;
+      const q = query(collection(db, 'machines'), orderBy('updatedAt', 'desc'));
+      unsubscribeFn = onSnapshot(q, (snapshot) => {
+        const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
+        setMachines(ms);
+      }, (error) => {
+        console.error('Error fetching machines:', error);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        unsubscribeFn?.();
+        unsubscribeFn = null;
+      } else {
+        subscribe();
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubscribeFn?.();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {

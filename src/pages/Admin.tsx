@@ -286,16 +286,37 @@ export default function Admin() {
   const allReatores = Array.from(new Set([...defaultReatores, ...uniqueReatores]));
 
   useEffect(() => {
-    const q = query(collection(db, 'machines'), orderBy('updatedAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
-      setMachines(ms);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching machines:', error);
-    });
+    let unsubscribeFn: (() => void) | null = null;
 
-    return () => unsubscribe();
+    const subscribe = () => {
+      if (unsubscribeFn) return;
+      const q = query(collection(db, 'machines'), orderBy('updatedAt', 'desc'));
+      unsubscribeFn = onSnapshot(q, (snapshot) => {
+        const ms = snapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
+        setMachines(ms);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching machines:', error);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        unsubscribeFn?.();
+        unsubscribeFn = null;
+      } else {
+        setLoading(true);
+        subscribe();
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubscribeFn?.();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // ─── Automated Test Function (DEV only) ────────────────────────────────────
