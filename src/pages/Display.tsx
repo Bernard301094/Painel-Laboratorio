@@ -73,7 +73,7 @@ export default function Display() {
       // Available height = window height - top padding (pt-28 = 112px max) - bottom padding (pb-6 = 24px)
       const availableHeight = h - 112 - 24; 
       // Approximate min card height
-      const cardHeight = 180;
+      const cardHeight = 210;
       const gap = 20;
 
       let rows = Math.floor((availableHeight + gap) / (cardHeight + gap));
@@ -189,62 +189,74 @@ export default function Display() {
 
 const MachineCard = ({ data }: { data: any }) => {
   const isManipuladoLiberado = data.tag?.toUpperCase() === 'MANIPULADO' && data.status?.toUpperCase() === 'LIBERADO';
-  
+
   const isGreen = !isManipuladoLiberado && data.status?.toUpperCase() === 'LIBERADO';
   const isRed = data.status?.toUpperCase() === 'EM AJUSTE';
   const isYellow = data.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
   const isBlue = data.status?.toUpperCase() === 'EM ANÁLISE';
 
   const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-400';
-  const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : isBlue ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
-  const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-100';
-  const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : isBlue ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-600';
+  const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.15)] border-[rgba(16,185,129,0.38)]' : isRed ? 'bg-[rgba(239,68,68,0.15)] border-[rgba(239,68,68,0.38)]' : isYellow ? 'bg-[rgba(245,158,11,0.15)] border-[rgba(245,158,11,0.38)]' : isBlue ? 'bg-[rgba(59,130,246,0.15)] border-[rgba(59,130,246,0.38)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
+  const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : isGreen ? 'text-emerald-400' : 'text-gray-100';
   const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : isBlue ? 'glow-blue' : '';
-  
+  const accentColor = isRed ? 'rgb(239,68,68)' : isGreen ? 'rgb(16,185,129)' : isYellow ? 'rgb(245,158,11)' : isBlue ? 'rgb(59,130,246)' : 'rgb(75,85,99)';
+  const accentSoft  = isRed ? 'rgba(239,68,68,0.13)'  : isGreen ? 'rgba(16,185,129,0.13)'  : isYellow ? 'rgba(245,158,11,0.13)'  : isBlue ? 'rgba(59,130,246,0.13)'  : 'transparent';
+  const accentMid   = isRed ? 'rgba(239,68,68,0.4)'   : isGreen ? 'rgba(16,185,129,0.4)'   : isYellow ? 'rgba(245,158,11,0.4)'   : isBlue ? 'rgba(59,130,246,0.4)'   : 'rgba(255,255,255,0.06)';
   const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
 
   return (
-    <div className={`glass-card rounded-2xl p-4 md:p-5 relative overflow-hidden flex flex-col h-full hover:-translate-y-1 transition-all duration-300 ${glowClass}`}>
-      <div className={`absolute top-0 left-0 w-full h-1 ${indicatorColor}`}></div>
-      
-      <div className="flex justify-between items-start mb-2 md:mb-3 pt-1 shrink-0">
-        <div>
-          <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-1 uppercase">Reator</span>
-          <h2 className={`text-2xl md:text-3xl font-black tracking-tight leading-none ${headerText}`}>{data.id}</h2>
-        </div>
-        <div className={`${colorBg} ${colorText} px-2 py-1 md:px-2.5 md:py-1.5 rounded-lg flex items-center border shadow-sm`}>
-          <Icon className="w-3 h-3 md:w-3.5 md:h-3.5 mr-1 md:mr-1.5" />
-          <span className="text-[8px] md:text-[9px] font-bold tracking-wider uppercase">{data.status}</span>
-        </div>
-      </div>
-      
-      <div className="flex-grow flex flex-col justify-center z-10 py-1 min-h-0">
-        <div className="mb-2 md:mb-3 shrink-0">
-          <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Produto</span>
-          <p className="text-sm md:text-base font-bold text-gray-200 uppercase leading-snug line-clamp-2" title={data.product}>{data.product}</p>
-        </div>
-        <div className="flex gap-2 w-full mt-auto">
-          <div className="flex-1 bg-[rgba(255,255,255,0.05)] p-2 rounded-lg border border-[rgba(255,255,255,0.05)] overflow-hidden">
-            <span className="text-[9px] md:text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
-            <p className="text-xs md:text-[13px] font-semibold text-gray-300 truncate">{data.op}</p>
+    <div className={`relative rounded-2xl overflow-hidden flex flex-col h-full border border-[rgba(255,255,255,0.08)] bg-[#0d0d11] shadow-2xl ${glowClass}`}>
+      {/* Left accent bar — 4px full height */}
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', backgroundColor: accentColor }}></div>
+      {/* Bottom echo bar */}
+      <div style={{ position: 'absolute', bottom: 0, left: '4px', right: 0, height: '2px', background: `linear-gradient(90deg, ${accentMid} 0%, transparent 100%)` }}></div>
+
+      {/* Header — diagonal color gradient */}
+      <div className="pl-6 pr-5 pt-5 pb-4 relative z-10" style={{ background: `linear-gradient(135deg, ${accentSoft} 0%, transparent 65%)` }}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-[8px] font-bold tracking-[0.22em] text-gray-600 uppercase block mb-1">Reator</span>
+            <h2 className={`text-5xl font-black tracking-tight leading-none ${headerText}`}>{data.id}</h2>
           </div>
-          <div className="flex-1 bg-[rgba(255,255,255,0.05)] p-2 rounded-lg border border-[rgba(255,255,255,0.05)] overflow-hidden">
-            <span className="text-[9px] md:text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
-            <p className="text-xs md:text-[13px] font-semibold text-gray-300 uppercase truncate">{data.tag}</p>
+          <div className={`shrink-0 flex items-center gap-2 px-3 py-2.5 rounded-xl border shadow-lg ${colorBg}`}>
+            <Icon className={`w-4 h-4 ${colorText} shrink-0`} />
+            <span className={`text-[9px] font-black tracking-[0.1em] uppercase ${colorText} whitespace-nowrap`}>{data.status}</span>
           </div>
         </div>
       </div>
-      
-      <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-1 z-10 shrink-0">
-        <span className={`text-[9px] md:text-[10px] font-bold tracking-wider uppercase flex items-center ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
-          <Clock className="w-3.5 h-3.5 mr-1.5" />
-          Horário: {data.time}
-        </span>
-        {data.history && data.history.length > 0 && (
-          <span className="text-[8px] md:text-[9px] font-medium tracking-wide flex items-center text-gray-500 opacity-80">
-            Anterior: {data.history[data.history.length - 1].status} às {data.history[data.history.length - 1].time}
+
+      {/* Colored fading divider */}
+      <div style={{ height: '1px', background: `linear-gradient(90deg, ${accentMid} 0%, rgba(255,255,255,0.04) 100%)` }}></div>
+
+      {/* Body — Product name */}
+      <div className="pl-6 pr-5 py-4 flex-grow relative z-10 flex flex-col justify-center">
+        <span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase block mb-1.5">Produto</span>
+        <p className="text-base md:text-lg font-bold text-white uppercase leading-snug line-clamp-2" title={data.product}>{data.product}</p>
+      </div>
+
+      {/* Footer — OP, Amostra, Horário */}
+      <div className="pl-6 pr-5 pt-3 pb-5 relative z-10" style={{ background: 'rgba(0,0,0,0.25)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <span className="text-[8px] font-bold tracking-[0.15em] text-gray-600 uppercase block mb-0.5">OP</span>
+            <p className="text-sm font-semibold text-gray-300">{data.op}</p>
+          </div>
+          <div>
+            <span className="text-[8px] font-bold tracking-[0.15em] text-gray-600 uppercase block mb-0.5">Amostra</span>
+            <p className={`text-sm font-bold uppercase ${colorText}`}>{data.tag}</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className={`text-[10px] font-semibold flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            {data.time}
           </span>
-        )}
+          {data.history && data.history.length > 0 && (
+            <span className="text-[9px] text-gray-600 text-right leading-tight">
+              ant: {data.history[data.history.length - 1].status} · {data.history[data.history.length - 1].time}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

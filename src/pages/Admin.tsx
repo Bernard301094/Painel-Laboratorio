@@ -649,130 +649,132 @@ export default function Admin() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
-          {filteredMachines.map((m) => {
-            if(editingId === m.firebaseId) {
-              return (
-                <form key={'edit-'+m.firebaseId} onSubmit={handleSave} className="bg-[#1a1a1a] rounded-2xl p-5 relative overflow-visible flex flex-col justify-between h-full min-h-[190px] border border-[rgba(16,185,129,0.4)] shadow-2xl animate-in zoom-in-95 duration-200 z-50">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="w-1/2">
-                      <span className="text-[10px] font-bold tracking-wider text-emerald-400 block mb-1 uppercase">Reator</span>
-                      <ComboInput value={formData.id} options={allReatores} onChange={v => setFormData({...formData, id: v})} placeholder="Reator" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(16,185,129,0.3)] outline-none px-2 py-1 -ml-2 rounded text-xl font-black tracking-tight text-white w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-2">
-                       <button type="button" onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:text-white bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] rounded transition-colors"><X className="w-4 h-4"/></button>
-                    </div>
-                  </div>
-                  <div className="space-y-3 flex-grow pt-1 relative z-30">
-                    <div>
-                      <span className="text-[10px] font-bold tracking-wider text-gray-400 block mb-0.5 uppercase">Produto</span>
-                      <input required value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 -ml-2 rounded text-[13px] font-bold text-gray-100 w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-[10px] font-bold tracking-wider text-gray-400 block mb-0.5 uppercase">OP</span>
-                        <input required value={formData.op} onChange={e => setFormData({...formData, op: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 -ml-2 rounded text-[13px] font-semibold text-gray-200 w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
-                      </div>
-                      <div className="w-[120px]">
-                        <span className="text-[10px] font-bold tracking-wider text-gray-400 block mb-0.5 uppercase">Amostra</span>
-                        <ComboInput value={formData.tag} options={allTags} onChange={v => setFormData({...formData, tag: v, time: ''})} placeholder="Amostra" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 -ml-2 rounded text-[13px] font-semibold text-gray-200 w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-3 relative z-20">
-                    <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Status</span>
-                       <div className="w-[130px]">
-                         <ComboInput value={formData.status} options={allStatuses} onChange={v => setFormData({...formData, status: v, time: ''})} placeholder="Status" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-full focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" />
-                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Horário</span>
-                       <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1 rounded text-[11px] font-black text-white w-[130px] focus:border-emerald-500 focus:bg-[rgba(0,0,0,0.6)] transition-all text-right" />
-                    </div>
-                    <button type="submit" className="w-full bg-emerald-500 text-white font-bold text-[11px] uppercase py-2 rounded hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]">Salvar Alterações</button>
-                  </div>
-                </form>
-              );
-            }
+        <div className="overflow-x-auto rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#0d0d11] shadow-lg">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-[rgba(255,255,255,0.07)] bg-[rgba(0,0,0,0.35)]">
+                <th style={{ width: '3px' }} className="p-0"></th>
+                <th className="px-4 py-3 text-left"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">Reator</span></th>
+                <th className="px-4 py-3 text-left"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">Produto</span></th>
+                <th className="px-4 py-3 text-left"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">OP</span></th>
+                <th className="px-4 py-3 text-left"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">Amostra</span></th>
+                <th className="px-4 py-3 text-left"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">Status</span></th>
+                <th className="px-4 py-3 text-left"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">Horário</span></th>
+                <th className="px-4 py-3 text-right"><span className="text-[8px] font-bold tracking-[0.18em] text-gray-600 uppercase">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMachines.map((m) => {
+                if(editingId === m.firebaseId) {
+                  return (
+                    <tr key={'edit-'+m.firebaseId} className="border-b border-[rgba(16,185,129,0.25)] bg-[rgba(16,185,129,0.04)] animate-in fade-in duration-200">
+                      <td className="p-0" style={{ width: '3px', backgroundColor: 'rgb(16,185,129)' }}></td>
+                      <td colSpan={7} className="px-4 py-4">
+                        <form onSubmit={handleSave} className="flex items-end gap-3 flex-wrap">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold tracking-[0.18em] text-emerald-400 uppercase">Reator</span>
+                            <ComboInput value={formData.id} options={allReatores} onChange={v => setFormData({...formData, id: v})} placeholder="Reator" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(16,185,129,0.3)] outline-none px-2 py-1.5 rounded text-sm font-black text-white w-[90px] focus:border-emerald-500 transition-all" />
+                          </div>
+                          <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                            <span className="text-[8px] font-bold tracking-[0.18em] text-gray-500 uppercase">Produto</span>
+                            <input required value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1.5 rounded text-sm font-semibold text-gray-100 w-full focus:border-emerald-500 transition-all" placeholder="Nome do Produto" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold tracking-[0.18em] text-gray-500 uppercase">OP</span>
+                            <input required value={formData.op} onChange={e => setFormData({...formData, op: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1.5 rounded text-sm font-semibold text-gray-200 w-[90px] focus:border-emerald-500 transition-all" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold tracking-[0.18em] text-gray-500 uppercase">Amostra</span>
+                            <ComboInput value={formData.tag} options={allTags} onChange={v => setFormData({...formData, tag: v, time: ''})} placeholder="Amostra" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1.5 rounded text-sm font-semibold text-gray-200 w-[120px] focus:border-emerald-500 transition-all" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold tracking-[0.18em] text-gray-500 uppercase">Status</span>
+                            <ComboInput value={formData.status} options={allStatuses} onChange={v => setFormData({...formData, status: v, time: ''})} placeholder="Status" classNameInput="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1.5 rounded text-sm font-semibold text-white w-[130px] focus:border-emerald-500 transition-all" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-bold tracking-[0.18em] text-gray-500 uppercase">Horário</span>
+                            <input required type="time" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} className="bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] outline-none px-2 py-1.5 rounded text-sm font-semibold text-white w-[110px] focus:border-emerald-500 transition-all" />
+                          </div>
+                          <div className="flex items-center gap-2 pb-0.5">
+                            <button type="submit" className="bg-emerald-500 text-white font-bold text-[10px] uppercase py-[9px] px-5 rounded hover:bg-emerald-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)] whitespace-nowrap">Salvar</button>
+                            <button type="button" onClick={() => setEditingId(null)} className="p-2 text-gray-400 hover:text-white bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] rounded transition-colors"><X className="w-4 h-4"/></button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  );
+                }
 
-            const isManipuladoLiberado = m.tag?.toUpperCase() === 'MANIPULADO' && m.status?.toUpperCase() === 'LIBERADO';
-            const isGreen = !isManipuladoLiberado && m.status?.toUpperCase() === 'LIBERADO';
-            const isRed = m.status?.toUpperCase() === 'EM AJUSTE';
-            const isYellow = m.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
-            const isBlue = m.status?.toUpperCase() === 'EM ANÁLISE';
-            const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-400';
-            const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : isBlue ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
-            const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-100';
-            const indicatorColor = isRed ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : isGreen ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isYellow ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : isBlue ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-gray-600';
-            const glowClass = isGreen ? 'glow-green' : isRed ? 'glow-red' : isYellow ? 'glow-yellow' : isBlue ? 'glow-blue' : '';
-            const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
+                const isManipuladoLiberado = m.tag?.toUpperCase() === 'MANIPULADO' && m.status?.toUpperCase() === 'LIBERADO';
+                const isGreen = !isManipuladoLiberado && m.status?.toUpperCase() === 'LIBERADO';
+                const isRed = m.status?.toUpperCase() === 'EM AJUSTE';
+                const isYellow = m.status?.toUpperCase() === 'AGUARDANDO' || isManipuladoLiberado;
+                const isBlue = m.status?.toUpperCase() === 'EM ANÁLISE';
+                const colorText = isGreen ? 'text-emerald-400' : isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : 'text-gray-400';
+                const colorBg = isGreen ? 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.2)]' : isRed ? 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.2)]' : isYellow ? 'bg-[rgba(245,158,11,0.1)] border-[rgba(245,158,11,0.2)]' : isBlue ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.2)]' : 'bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)]';
+                const headerText = isRed ? 'text-red-400' : isYellow ? 'text-amber-400' : isBlue ? 'text-blue-400' : isGreen ? 'text-emerald-400' : 'text-gray-100';
+                const accentColor = isRed ? 'rgb(239,68,68)' : isGreen ? 'rgb(16,185,129)' : isYellow ? 'rgb(245,158,11)' : isBlue ? 'rgb(59,130,246)' : 'rgb(75,85,99)';
+                const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
 
-            return (
-              <div key={m.firebaseId} className={`glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-full min-h-[190px] hover:-translate-y-1 transition-all duration-300 group ${glowClass}`}>
-                <div className={`absolute top-0 left-0 w-full h-1 ${indicatorColor}`}></div>
-                <div className="absolute top-3 right-3 flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity z-20">
-                    <button onClick={(e) => { e.preventDefault(); handleEdit(m); }} className="p-1.5 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm border border-[rgba(255,255,255,0.1)] rounded-md hover:bg-[rgba(255,255,255,0.1)] hover:text-white text-gray-400 transition-all shadow-sm">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={(e) => { e.preventDefault(); setDeleteConfirmId(m.firebaseId); }} className="p-1.5 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm border border-[rgba(239,68,68,0.2)] rounded-md hover:bg-[rgba(239,68,68,0.2)] hover:text-red-300 text-red-500 transition-all shadow-sm">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
-                <div className="flex justify-between items-start mb-3 pt-1">
-                  <div>
-                    <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-1 uppercase">Reator</span>
-                    <h2 className={`text-3xl font-black tracking-tight ${headerText}`}>{m.id}</h2>
-                  </div>
-                </div>
-                <div className="space-y-3 flex-grow z-10 pt-1">
-                  <div>
-                    <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Produto</span>
-                    <p className="text-base font-bold text-gray-200 uppercase leading-tight truncate" title={m.product}>{m.product}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-[rgba(255,255,255,0.05)] p-2 rounded-lg border border-[rgba(255,255,255,0.05)]">
-                      <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">OP</span>
-                      <p className="text-[13px] font-semibold text-gray-300">{m.op}</p>
-                    </div>
-                    <div className="bg-[rgba(255,255,255,0.05)] p-2 rounded-lg border border-[rgba(255,255,255,0.05)]">
-                      <span className="text-[10px] font-bold tracking-wider text-gray-500 block mb-0.5 uppercase">Amostra</span>
-                      <p className="text-[13px] font-semibold text-gray-300 uppercase">{m.tag}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.1)] flex flex-col gap-2 z-10 shrink-0">
-                  <div className="flex justify-between items-center w-full">
-                    <span className={`text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
-                      <input 
-                        id={`quick-time-${m.firebaseId}`}
-                        key={m.time}
-                        type="time" 
-                        defaultValue={m.time || ''} 
-                        className={`bg-transparent outline-none w-[70px] hover:bg-[rgba(255,255,255,0.1)] focus:bg-[rgba(255,255,255,0.1)] focus:ring-1 focus:ring-emerald-500 rounded px-1 transition-all cursor-pointer border border-transparent hover:border-[rgba(255,255,255,0.2)] ${isRed ? 'text-red-400' : 'text-gray-300'}`}
-                        title="Modifique o horário aqui ANTES de selecionar a amostra ou status."
-                      />
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <CardSelect value={m.tag} options={defaultTags} onChange={(v) => handleQuickUpdate(m, 'tag', v)} className="w-[100px]" />
-                      <CardSelect value={m.status} options={defaultStatuses} onChange={(v) => handleQuickUpdate(m, 'status', v)} colorBg={colorBg} colorText={colorText} className="w-[110px]" />
-                    </div>
-                  </div>
-                  {m.history && m.history.length > 0 && (
-                    <span className="text-[8px] md:text-[9px] font-medium tracking-wide flex items-center text-gray-500 opacity-80 mt-0.5">
-                      Anterior: {m.history[m.history.length - 1].status} às {m.history[m.history.length - 1].time}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {filteredMachines.length === 0 && (
-            <div className="col-span-full p-8 text-center text-gray-500 border border-[rgba(255,255,255,0.1)] border-dashed rounded-2xl h-40 flex items-center justify-center font-medium bg-[rgba(255,255,255,0.05)] backdrop-blur-sm">
-              Nenhum registro encontrado. {searchQuery || filterTag || filterStatus ? 'Tente limpar os filtros.' : 'Adicione uma nova OP.'}
-            </div>
-          )}
+                return (
+                  <tr key={m.firebaseId} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.025)] transition-colors group">
+                    <td className="p-0" style={{ width: '3px', backgroundColor: accentColor }}></td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className={`text-[15px] font-black tracking-tight ${headerText}`}>{m.id}</span>
+                    </td>
+                    <td className="px-4 py-3.5 max-w-[220px]">
+                      <span className="text-[13px] font-semibold text-gray-200 uppercase block truncate" title={m.product}>{m.product}</span>
+                      {m.history && m.history.length > 0 && (
+                        <span className="text-[10px] text-gray-600 block mt-0.5">ant: {m.history[m.history.length - 1].status} · {m.history[m.history.length - 1].time}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className="text-[13px] font-medium text-gray-400">{m.op}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <CardSelect value={m.tag} options={defaultTags} onChange={(v) => handleQuickUpdate(m, 'tag', v)} className="w-[110px]" />
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${colorText} shrink-0`} />
+                        <CardSelect value={m.status} options={defaultStatuses} onChange={(v) => handleQuickUpdate(m, 'status', v)} colorBg={colorBg} colorText={colorText} className="w-[120px]" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className={`w-3.5 h-3.5 shrink-0 ${isRed ? 'text-red-400' : 'text-gray-600'}`} />
+                        <input
+                          id={`quick-time-${m.firebaseId}`}
+                          key={m.time}
+                          type="time"
+                          defaultValue={m.time || ''}
+                          className={`bg-transparent outline-none w-[72px] hover:bg-[rgba(255,255,255,0.08)] focus:bg-[rgba(255,255,255,0.08)] focus:ring-1 focus:ring-emerald-500 rounded px-1 transition-all cursor-pointer border border-transparent hover:border-[rgba(255,255,255,0.2)] text-[11px] font-semibold ${isRed ? 'text-red-400' : 'text-gray-300'}`}
+                          title="Modifique o horário aqui ANTES de selecionar a amostra ou status."
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-end gap-1.5 opacity-25 group-hover:opacity-100 transition-opacity duration-200">
+                        <button onClick={() => handleEdit(m)} className="p-1.5 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md hover:bg-[rgba(255,255,255,0.12)] hover:text-white text-gray-400 transition-all">
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setDeleteConfirmId(m.firebaseId)} className="p-1.5 bg-[rgba(239,68,68,0.05)] border border-[rgba(239,68,68,0.15)] rounded-md hover:bg-[rgba(239,68,68,0.18)] hover:text-red-300 text-red-500 transition-all">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredMachines.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-8 py-16 text-center text-gray-500 font-medium">
+                    Nenhum registro encontrado. {searchQuery || filterTag || filterStatus ? 'Tente limpar os filtros.' : 'Adicione uma nova OP.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </main>
     </div>
