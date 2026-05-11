@@ -498,19 +498,32 @@ export default function Admin() {
     }
   };
 
-  const filteredMachines = machines.filter(m => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchSearch = 
-      !searchQuery || 
-      m.id?.toLowerCase().includes(searchLower) ||
-      m.product?.toLowerCase().includes(searchLower) ||
-      m.op?.toLowerCase().includes(searchLower);
-    
-    const matchTag = !filterTag || m.tag?.toUpperCase() === filterTag;
-    const matchStatus = !filterStatus || m.status?.toUpperCase() === filterStatus;
+  const STATUS_PRIORITY: Record<string, number> = {
+    'EM AJUSTE': 0,
+    'AGUARDANDO': 1,
+    'EM ANÁLISE': 2,
+    'LIBERADO': 3,
+  };
 
-    return matchSearch && matchTag && matchStatus;
-  });
+  const filteredMachines = machines
+    .filter(m => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchSearch =
+        !searchQuery ||
+        m.id?.toLowerCase().includes(searchLower) ||
+        m.product?.toLowerCase().includes(searchLower) ||
+        m.op?.toLowerCase().includes(searchLower);
+
+      const matchTag = !filterTag || m.tag?.toUpperCase() === filterTag;
+      const matchStatus = !filterStatus || m.status?.toUpperCase() === filterStatus;
+
+      return matchSearch && matchTag && matchStatus;
+    })
+    .sort((a, b) => {
+      const aP = STATUS_PRIORITY[a.status?.toUpperCase()] ?? 99;
+      const bP = STATUS_PRIORITY[b.status?.toUpperCase()] ?? 99;
+      return aP - bP;
+    });
 
   return (
     <div className="bg-[#0a0a0a] text-gray-100 min-h-screen font-sans flex flex-col relative overflow-x-hidden selection:bg-[rgba(16,185,129,0.3)] selection:text-emerald-200">
@@ -717,7 +730,7 @@ export default function Admin() {
                 const Icon = isGreen ? CheckCircle : isRed ? AlertTriangle : isYellow ? Hourglass : isBlue ? Search : Clock;
 
                 return (
-                  <tr key={m.firebaseId} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.025)] transition-colors group">
+                  <tr key={m.firebaseId} className="border-b border-[rgba(255,255,255,0.04)] transition-colors group cursor-default" style={{ '--hover-color': accentColor } as React.CSSProperties} onMouseEnter={e => (e.currentTarget.style.backgroundColor = accentColor.replace('rgb', 'rgba').replace(')', ',0.06)'))} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}>
                     <td className="p-0" style={{ width: '3px', backgroundColor: accentColor }}></td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className={`text-[15px] font-black tracking-tight ${headerText}`}>{m.id}</span>
