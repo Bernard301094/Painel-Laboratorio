@@ -220,6 +220,13 @@ export default function Display() {
   );
 }
 
+const formatDate = (ts: any): string => {
+  if (!ts) return '';
+  const d = ts?.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+};
+
 const MachineCard = ({ data }: { data: any }) => {
   const isManipuladoLiberado = data.tag?.toUpperCase() === 'MANIPULADO' && data.status?.toUpperCase() === 'LIBERADO';
 
@@ -282,13 +289,16 @@ const MachineCard = ({ data }: { data: any }) => {
         <div className="flex items-center justify-between gap-2">
           <span className={`text-[10px] font-semibold flex items-center gap-1.5 ${isRed ? 'text-red-400' : 'text-gray-500'}`}>
             <Clock className="w-3.5 h-3.5 shrink-0" />
-            {data.time}
+            {formatDate(data.updatedAt) && <span className="opacity-70">{formatDate(data.updatedAt)}</span>} {data.time}
           </span>
-          {data.history && data.history.length > 0 && (
-            <span className="text-[9px] text-gray-600 text-right leading-tight">
-              ant: {data.history[data.history.length - 1].status} · {data.history[data.history.length - 1].time}
-            </span>
-          )}
+          {data.history && data.history.length > 0 && (() => {
+            const last = data.history[data.history.length - 1];
+            return (
+              <span className="text-[9px] text-gray-600 text-right leading-tight">
+                ant: {last.status} · {formatDate(last.timestamp) && <>{formatDate(last.timestamp)} </>}{last.time}
+              </span>
+            );
+          })()}
         </div>
       </div>
     </div>
